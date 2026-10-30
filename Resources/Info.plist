@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>CFBundleIdentifier</key><string>com.minh.inputmethod.VietMoi</string>
+  <key>CFBundleName</key><string>viet</string>
+  <key>CFBundleDisplayName</key><string>viet</string>
+  <key>CFBundleExecutable</key><string>VietMoi</string>
+  <key>CFBundlePackageType</key><string>APPL</string>
+  <key>CFBundleVersion</key><string>20</string>
+  <key>CFBundleShortVersionString</key><string>0.6.3</string>
+  <key>LSMinimumSystemVersion</key><string>13.0</string>
+  <key>LSUIElement</key><true/>
+  <key>NSPrincipalClass</key><string>NSApplication</string>
+  <key>NSHighResolutionCapable</key><true/>
+  <key>InputMethodConnectionName</key><string>com.minh.inputmethod.VietMoi_Connection</string>
+  <key>InputMethodServerControllerClass</key><string>VietMoiInputController</string>
+  <key>TISInputSourceID</key><string>com.minh.inputmethod.VietMoi</string>
+  <key>TISIntendedLanguage</key><string>vi</string>
+  <key>tsInputMethodCharacterRepertoireKey</key><array><string>Latn</string></array>
+  <key>tsInputMethodIconFileKey</key><string>MenuIcon.tiff</string>
+  <key>tsInputMethodAlternateIconFileKey</key><string>MenuIcon.tiff</string>
+  <key>TISIconIsTemplate</key><true/>
+</dict></plist>

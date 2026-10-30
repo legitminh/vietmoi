@@ -1,0 +1,71 @@
+import Foundation
+
+var checks = 0
+func expect(_ value: @autoclosure () -> Bool, _ message: String) {
+    checks += 1
+    if !value() { fatalError(message) }
+}
+let suite = "com.minh.viet.shift-tests.\(UUID().uuidString)"
+let defaults = UserDefaults(suiteName: suite)!
+defer { defaults.removePersistentDomain(forName: suite) }
+let preferences = KeyboardPreferences(defaults: defaults)
+expect(preferences.shiftTapSeconds == 0.20, "Shipped default must be 200ms")
+expect(preferences.setShiftTapSeconds(0.35), "Valid custom value must save")
+expect(KeyboardPreferences(defaults: defaults).shiftTapSeconds == 0.35, "Custom value survives restart")
+for invalid in [0.0, -1.0, 5.1, Double.nan, Double.infinity] {
+    expect(!preferences.setShiftTapSeconds(invalid) && preferences.shiftTapSeconds == 0.35, "Invalid values must preserve the saved value")
+}
+preferences.resetShiftTapSeconds()
+expect(KeyboardPreferences(defaults: defaults).shiftTapSeconds == KeyboardPreferences.defaultShiftTapSeconds, "Reset restores the compiled default")
+defaults.set(-0.1, forKey: "shiftTapSeconds.v1")
+expect(preferences.shiftTapSeconds == 0.20, "Invalid stored preference falls back to the default")
+defaults.set("bad value", forKey: "shiftTapSeconds.v1")
+expect(preferences.shiftTapSeconds == 0.20, "Malformed preferences recover")
+
+var tap = ShiftTapDetector()
+tap.press(at: 0, threshold: 0.2, isolated: true)
+expect(tap.release(at: 0.199), "Short isolated tap")
+expect(!tap.release(at: 0.199), "Duplicate release cannot switch twice")
+tap.press(at: 0, threshold: 0.2, isolated: true)
+expect(!tap.release(at: 0.2), "Threshold boundary is a hold")
+tap.press(at: 0, threshold: 0.2, isolated: true)
+expect(!tap.release(at: 1), "Long hold")
+tap.press(at: 1, threshold: 0.2, isolated: true)
+expect(!tap.release(at: 0), "Out-of-order timestamps are not taps")
+tap.press(at: 0, threshold: 0.2, isolated: true)
+tap.press(at: 0.9, threshold: 2, isolated: true)
+expect(!tap.release(at: 1), "Duplicate down must not reset duration")
+tap.press(at: 0, threshold: 0.2, isolated: false)
+expect(!tap.release(at: 0.1), "Existing modifier disqualifies tap")
+tap.keyDown(0)
+tap.press(at: 0, threshold: 0.2, isolated: true)
+tap.keyUp(0)
+expect(!tap.release(at: 0.1), "Pre-held key disqualifies tap even if it releases first")
+tap.press(at: 0, threshold: 0.2, isolated: true)
+tap.keyDown(0)
+expect(!tap.release(at: 0.1), "Shift released during keypress is not a tap")
+tap.keyUp(0)
+tap.press(at: 0, threshold: 0.2, isolated: true)
+tap.keyDown(0)
+tap.keyUp(0)
+expect(!tap.release(at: 0.1), "Complete overlapping key tap also disqualifies Shift")
+tap.press(at: 0, threshold: 0.2, isolated: true)
+tap.interrupt()
+expect(!tap.release(at: 0.1), "Modifier/mouse interruptions disqualify tap")
+tap.press(at: 0, threshold: 0.2, isolated: true)
+tap.reset()
+expect(!tap.release(at: 0.1), "Session reset clears pending tap")
+tap.press(at: 0, threshold: 0.5, isolated: true)
+expect(tap.release(at: 0.3), "Custom threshold")
+tap.keyDown(0)
+tap.press(at: 0, threshold: 0.2, isolated: true, isKeyDown: { _ in false })
+expect(tap.release(at: 0.1), "A stale held-key entry is reconciled at the next Shift press")
+tap.keyDown(0)
+tap.press(at: 0, threshold: 0.2, isolated: true, isKeyDown: { _ in true })
+expect(!tap.release(at: 0.1), "A genuinely pre-held key still blocks the tap")
+tap.reset()
+tap.press(at: 0, threshold: 0.2, isolated: true, isKeyDown: { _ in false })
+tap.keyDown(0)
+tap.keyUp(0)
+expect(!tap.release(at: 0.1), "Reconciliation never revives an already interrupted tap")
+print("Passed \(checks) Shift timing and preference checks.")
