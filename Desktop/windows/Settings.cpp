@@ -20,7 +20,7 @@ LRESULT CALLBACK procedure(HWND window, UINT event, WPARAM w, LPARAM l) {
         };
         label("keyboardSettings",15);label("inputLabel",50);
         inputBox=CreateWindowW(L"COMBOBOX",L"",WS_CHILD|WS_VISIBLE|WS_TABSTOP|CBS_DROPDOWNLIST,20,75,510,180,window,nullptr,nullptr,nullptr);
-        for (auto value:{L"ASCII+",L"Grid"}) SendMessageW(inputBox,CB_ADDSTRING,0,reinterpret_cast<LPARAM>(value));
+        for (auto value:{L"ASCII+",L"grid4x8"}) SendMessageW(inputBox,CB_ADDSTRING,0,reinterpret_cast<LPARAM>(value));
         SendMessageW(inputBox,CB_SETCURSEL,settings.input,0);
         label("outputLabel",115);
         outputBox=CreateWindowW(L"COMBOBOX",L"",WS_CHILD|WS_VISIBLE|WS_TABSTOP|CBS_DROPDOWNLIST,20,140,510,180,window,nullptr,nullptr,nullptr);

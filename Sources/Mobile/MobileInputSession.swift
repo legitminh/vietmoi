@@ -94,7 +94,7 @@ import Foundation
     func accessibilityLabel(for key: ASCIIKey) -> String {
         if key.keyCode == 56 { return AppCopy.text(ascii ? "switchVietnamese" : "switchAscii") }
         let action = input == .grid4x8 ? (label(for: key) ?? AppCopy.text("unavailable")) : (ASCIIPlusMapping.actions(for: engine)[key.keyCode] ?? AppCopy.text("unavailable"))
-        return ascii ? key.label : "\(key.label): \(action)"
+        return ascii ? key.label : "\(key.label): \(action == "Clear" ? AppCopy.text("clear") : action)"
     }
     func press(_ key: ASCIIKey, letterCase: MobileLetterCase = .lowercase) {
         edit {

@@ -61,8 +61,8 @@
         0.39
       ]
     ],
-    "version": "0.12.0",
-    "build": 37
+    "version": "0.12.1",
+    "build": 38
   },
   "copy": {
     "tagline": {
@@ -360,6 +360,86 @@
     "windowsPracticeHelp": {
       "vi": "Chọn siêu việt bằng Win+Space, rồi gõ thử tại đây:",
       "en": "Select siêu việt with Win+Space, then type here:"
+    },
+    "unmappedKeyHelp": {
+      "vi": "Chọn phím được tô sáng, hoặc nhấn riêng Shift để gõ ASCII.",
+      "en": "Choose a highlighted key, or tap Shift for ASCII."
+    },
+    "installBuildFirst": {
+      "vi": "Hãy tạo bản dựng ứng dụng trước.",
+      "en": "Build the app first."
+    },
+    "installStale": {
+      "vi": "Bản dựng macOS đã cũ. Chạy bash scripts/build.sh trước khi cài.",
+      "en": "The Mac build is stale. Run bash scripts/build.sh before installing."
+    },
+    "installPreserved": {
+      "vi": "Giữ nguyên {path} đã có; hãy mở trực tiếp {destination}.",
+      "en": "Preserved existing {path}; open {destination} directly."
+    },
+    "installComplete": {
+      "vi": "Đã cài: {path}",
+      "en": "Installed: {path}"
+    },
+    "installLaunch": {
+      "vi": "Mở ứng dụng: {path}",
+      "en": "Launch: {path}"
+    },
+    "installMacHelp": {
+      "vi": "Thêm siêu việt trong Cài đặt hệ thống → Bàn phím → Nhập văn bản → Sửa → +. Tìm siêu việt hoặc tiếng Việt.",
+      "en": "Add siêu việt in System Settings → Keyboard → Text Input → Edit → +. Search for siêu việt or Vietnamese."
+    },
+    "installMacLogin": {
+      "vi": "Nếu chưa thấy bàn phím, hãy đăng xuất rồi đăng nhập lại để macOS làm mới danh sách bộ gõ.",
+      "en": "If the keyboard is not listed, log out and back in so macOS refreshes its input-method list."
+    },
+    "installMacVerified": {
+      "vi": "Đã xác minh siêu việt đang chạy, PID {pid}, mã bản dựng {fingerprint}.",
+      "en": "Verified running siêu việt, PID {pid}, build fingerprint {fingerprint}."
+    },
+    "installMacNotRunning": {
+      "vi": "Đã xác minh gói ứng dụng đã cài, nhưng chưa khởi chạy được tiến trình macOS mới.",
+      "en": "The installed bundle is verified, but the updated Mac process did not start."
+    },
+    "installIOSTeam": {
+      "vi": "Cung cấp mã nhóm phát triển Apple để ký bản dựng cho thiết bị.",
+      "en": "Supply your Apple development team ID to sign the device build."
+    },
+    "installIOSUnsigned": {
+      "vi": "Cần bản dựng thiết bị đã ký; không thể cài bản dành cho trình mô phỏng hoặc bản chưa ký.",
+      "en": "A signed device build is required; simulator and unsigned builds cannot be installed."
+    },
+    "installIOSUsage": {
+      "vi": "Cách dùng: bash scripts/install-ios.sh device-id [development-team-id | --no-build]. Đặt SIEUVIET_LANGUAGE=en để dùng tiếng Anh.",
+      "en": "Usage: bash scripts/install-ios.sh device-id [development-team-id | --no-build]. Set SIEUVIET_LANGUAGE=en for English."
+    },
+    "installWindowsMissingAdapter": {
+      "vi": "Không tìm thấy SieuvietTSF.dll trong gói cài đặt.",
+      "en": "SieuvietTSF.dll is missing from the installation package."
+    },
+    "installWindowsMissingEngine": {
+      "vi": "Cần có SieuvietEngine.dll trước khi đăng ký bộ gõ.",
+      "en": "SieuvietEngine.dll is required before registration."
+    },
+    "installWindowsMissingSmoke": {
+      "vi": "Không tìm thấy desktop-session-tests.exe để kiểm tra bộ gõ.",
+      "en": "desktop-session-tests.exe is missing; the engine cannot be checked."
+    },
+    "installWindowsSmokeFailed": {
+      "vi": "Kiểm tra bộ gõ không đạt; đã bỏ qua bước đăng ký.",
+      "en": "The shared-engine smoke test failed; registration was skipped."
+    },
+    "installWindowsRegistrationFailed": {
+      "vi": "Đăng ký TSF không thành công. Kiểm tra quyền quản trị và kiến trúc của PowerShell cùng gói cài đặt.",
+      "en": "TSF registration failed. Check administrator access and matching PowerShell/package architectures."
+    },
+    "installWindowsRegistered": {
+      "vi": "Đã đăng ký. Chọn siêu việt bằng Win+Space. Mở SieuvietSettings.exe để cài đặt và gõ thử. Dùng -Language en để xem hướng dẫn cài bằng tiếng Anh.",
+      "en": "Registered. Select siêu việt with Win+Space. Open SieuvietSettings.exe for settings and practice. Use -Language vi for Vietnamese installation messages."
+    },
+    "installWindowsRemoved": {
+      "vi": "Đã gỡ đăng ký siêu việt. Cài đặt cá nhân vẫn được giữ.",
+      "en": "siêu việt registration was removed. Personal settings were preserved."
     }
   }
 }

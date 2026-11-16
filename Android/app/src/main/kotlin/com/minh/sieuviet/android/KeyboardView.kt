@@ -166,7 +166,7 @@ class KeyboardView(context: Context, private val session: () -> EditorSession?,
             }
         }
         row.addView(delete, keyParams())
-        row.addView(button("↵", "Return", R.id.keyboard_return) { session()?.enter() }, keyParams())
+        row.addView(button("↵", AppCopy.text("return"), R.id.keyboard_return) { session()?.enter() }, keyParams())
     }
     fun stopRepeating() { handler.removeCallbacksAndMessages(null) }
     override fun onDetachedFromWindow() { stopRepeating(); super.onDetachedFromWindow() }

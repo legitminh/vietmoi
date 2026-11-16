@@ -4,7 +4,7 @@
 #include <string_view>
 namespace sv::design {
 inline constexpr const char *name = "siêu việt";
-inline constexpr const char *version = "0.12.0";
+inline constexpr const char *version = "0.12.1";
 struct Copy { std::string_view key; const char *vi; const char *en; };
 inline constexpr Copy copy[] = {
     {"tagline", "Tiếng Việt, từng lựa chọn một.", "Vietnamese, one choice at a time."},
@@ -81,6 +81,26 @@ inline constexpr Copy copy[] = {
     {"save", "Lưu", "Save"},
     {"saved", "Đã lưu. Quay lại ô nhập để áp dụng.", "Saved. Return to a text field to apply."},
     {"windowsPracticeHelp", "Chọn siêu việt bằng Win+Space, rồi gõ thử tại đây:", "Select siêu việt with Win+Space, then type here:"},
+    {"unmappedKeyHelp", "Chọn phím được tô sáng, hoặc nhấn riêng Shift để gõ ASCII.", "Choose a highlighted key, or tap Shift for ASCII."},
+    {"installBuildFirst", "Hãy tạo bản dựng ứng dụng trước.", "Build the app first."},
+    {"installStale", "Bản dựng macOS đã cũ. Chạy bash scripts/build.sh trước khi cài.", "The Mac build is stale. Run bash scripts/build.sh before installing."},
+    {"installPreserved", "Giữ nguyên {path} đã có; hãy mở trực tiếp {destination}.", "Preserved existing {path}; open {destination} directly."},
+    {"installComplete", "Đã cài: {path}", "Installed: {path}"},
+    {"installLaunch", "Mở ứng dụng: {path}", "Launch: {path}"},
+    {"installMacHelp", "Thêm siêu việt trong Cài đặt hệ thống → Bàn phím → Nhập văn bản → Sửa → +. Tìm siêu việt hoặc tiếng Việt.", "Add siêu việt in System Settings → Keyboard → Text Input → Edit → +. Search for siêu việt or Vietnamese."},
+    {"installMacLogin", "Nếu chưa thấy bàn phím, hãy đăng xuất rồi đăng nhập lại để macOS làm mới danh sách bộ gõ.", "If the keyboard is not listed, log out and back in so macOS refreshes its input-method list."},
+    {"installMacVerified", "Đã xác minh siêu việt đang chạy, PID {pid}, mã bản dựng {fingerprint}.", "Verified running siêu việt, PID {pid}, build fingerprint {fingerprint}."},
+    {"installMacNotRunning", "Đã xác minh gói ứng dụng đã cài, nhưng chưa khởi chạy được tiến trình macOS mới.", "The installed bundle is verified, but the updated Mac process did not start."},
+    {"installIOSTeam", "Cung cấp mã nhóm phát triển Apple để ký bản dựng cho thiết bị.", "Supply your Apple development team ID to sign the device build."},
+    {"installIOSUnsigned", "Cần bản dựng thiết bị đã ký; không thể cài bản dành cho trình mô phỏng hoặc bản chưa ký.", "A signed device build is required; simulator and unsigned builds cannot be installed."},
+    {"installIOSUsage", "Cách dùng: bash scripts/install-ios.sh device-id [development-team-id | --no-build]. Đặt SIEUVIET_LANGUAGE=en để dùng tiếng Anh.", "Usage: bash scripts/install-ios.sh device-id [development-team-id | --no-build]. Set SIEUVIET_LANGUAGE=en for English."},
+    {"installWindowsMissingAdapter", "Không tìm thấy SieuvietTSF.dll trong gói cài đặt.", "SieuvietTSF.dll is missing from the installation package."},
+    {"installWindowsMissingEngine", "Cần có SieuvietEngine.dll trước khi đăng ký bộ gõ.", "SieuvietEngine.dll is required before registration."},
+    {"installWindowsMissingSmoke", "Không tìm thấy desktop-session-tests.exe để kiểm tra bộ gõ.", "desktop-session-tests.exe is missing; the engine cannot be checked."},
+    {"installWindowsSmokeFailed", "Kiểm tra bộ gõ không đạt; đã bỏ qua bước đăng ký.", "The shared-engine smoke test failed; registration was skipped."},
+    {"installWindowsRegistrationFailed", "Đăng ký TSF không thành công. Kiểm tra quyền quản trị và kiến trúc của PowerShell cùng gói cài đặt.", "TSF registration failed. Check administrator access and matching PowerShell/package architectures."},
+    {"installWindowsRegistered", "Đã đăng ký. Chọn siêu việt bằng Win+Space. Mở SieuvietSettings.exe để cài đặt và gõ thử. Dùng -Language en để xem hướng dẫn cài bằng tiếng Anh.", "Registered. Select siêu việt with Win+Space. Open SieuvietSettings.exe for settings and practice. Use -Language vi for Vietnamese installation messages."},
+    {"installWindowsRemoved", "Đã gỡ đăng ký siêu việt. Cài đặt cá nhân vẫn được giữ.", "siêu việt registration was removed. Personal settings were preserved."},
 };
 inline std::string text(std::string_view key, const std::string &language = "vi") {
     for (const auto &entry : copy) if (entry.key == key) return language == "en" ? entry.en : entry.vi;

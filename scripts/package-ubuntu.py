@@ -6,6 +6,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import tempfile
+import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -64,12 +65,12 @@ def main():
             f"Installed-Size: {installed}\nSection: utils\nPriority: optional\n"
             f"Depends: {', '.join(sorted(dependencies))}\nRecommends: ibus | fcitx5\n"
             "Homepage: https://github.com/legitminh/vietmoi\n"
-            f"Description: Vietnamese construction keyboard for Ubuntu {ubuntu}\n"
+            f"Description: Bộ gõ siêu việt cho Ubuntu {ubuntu}\n"
             " Shared Swift engine, IBus and Fcitx 5 adapters, and native settings.\n"
             " Select the keyboard in your input framework after installation.\n")
         document = tree / "usr/share/doc/sieuviet"
         document.mkdir(parents=True)
-        shutil.copy2(ROOT / "RELEASING.md", document / "README")
+        subprocess.run([sys.executable, str(ROOT / "scripts/copy-guides.py"), str(document), "README", "README.en.md"], check=True)
         notices = ROOT / "ThirdPartyNotices"
         if notices.exists():
             shutil.copytree(notices, document / "ThirdPartyNotices")

@@ -19,7 +19,7 @@ Gtk.StyleContext.add_provider_for_screen(Gdk.Screen.get_default(),css,Gtk.STYLE_
 column=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=12);window.add(column)
 column.pack_start(Gtk.Label(label=catalog['brand']['name'],xalign=0),False,False,0)
 selectors={};labels={}
-for name,key,options in [('input','inputLabel',['ASCII+','Grid']),('output','outputLabel',[catalog['brand']['name'],'Quốc ngữ']),('language','language',['Tiếng Việt','English'])]:
+for name,key,options in [('input','inputLabel',['ASCII+','grid4x8']),('output','outputLabel',[catalog['brand']['name'],'Quốc ngữ']),('language','language',['Tiếng Việt','English'])]:
     label=Gtk.Label(label=text(key),xalign=0);labels[key]=label;column.pack_start(label,False,False,0)
     selector=Gtk.ComboBoxText()
     for option in options: selector.append_text(option)

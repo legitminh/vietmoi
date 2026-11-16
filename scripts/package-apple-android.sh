@@ -11,7 +11,7 @@ ARCHITECTURES="$(xcrun lipo -archs build/VietMoi.app/Contents/MacOS/VietMoi)"
 [[ " $ARCHITECTURES " == *" arm64 "* && " $ARCHITECTURES " == *" x86_64 "* ]]
 codesign --verify --deep --strict build/VietMoi.app
 ditto build/VietMoi.app build/release-macos/VietMoi.app
-cp RELEASING.md build/release-macos/README.md
+python3 scripts/copy-guides.py build/release-macos
 ditto ThirdPartyNotices build/release-macos/ThirdPartyNotices
 ditto -c -k --keepParent build/release-macos "$OUTPUT/sieuviet-$VERSION-macos-universal.zip"
 xcodebuild -project iOS/VietMobile.xcodeproj -scheme VietMobile -configuration Release \
@@ -23,6 +23,6 @@ find build/release-ios/Payload -name embedded.mobileprovision -delete
 (cd build/release-ios && /usr/bin/zip -qry "$OUTPUT/sieuviet-$VERSION-ios-unsigned.ipa" Payload)
 python3 scripts/build-android.py --tests
 cp Android/app/build/outputs/apk/debug/app-debug.apk "$OUTPUT/sieuviet-$VERSION-android-universal-debug.apk"
-cp RELEASING.md "$OUTPUT/INSTALL.md"
+python3 scripts/copy-guides.py "$OUTPUT" INSTALL.md INSTALL.en.md
 ditto ThirdPartyNotices "$OUTPUT/ThirdPartyNotices"
 echo "Packaged Apple and Android builds in $OUTPUT"

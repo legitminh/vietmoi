@@ -230,14 +230,14 @@ final class InputSession {
         let effect: EngineEffect
         if asciiPlusMode {
             guard let value = ASCIIPlusMapping.bindings(for: engine.phase, inventory: engine.inventory, keymap: keymap)[event.keyCode] else {
-                refresh(sender, message: "Choose a highlighted key, or tap Shift for literal ASCII")
+                refresh(sender, message: AppCopy.text("unmappedKeyHelp"))
                 return true
             }
             effect = engine.selectComponent(value)
         } else {
             let index = GridKey.index(keyCode: event.keyCode)!
             guard index != 24 else {
-                refresh(sender, message: "Choose a highlighted key, or tap Shift for ASCII")
+                refresh(sender, message: AppCopy.text("unmappedKeyHelp"))
                 return true
             }
             effect = engine.press(index)

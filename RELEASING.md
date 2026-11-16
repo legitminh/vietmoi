@@ -1,63 +1,52 @@
-# siêu việt 0.12.0 (build 37)
+**Tiếng Việt** · [English](RELEASING.en.md)
 
-Development builds for macOS, iOS, Android, Windows and Ubuntu. Shared linguistic
-sources are in `Sources/Core`; native hosts and keyboard adapters use that engine.
-The repository includes all source needed to build the apps and keyboards.
+# siêu việt 0.12.1 · bản dựng 38
 
-## Downloads and installation
+Bản dùng thử dành cho macOS, iOS, Android, Windows và Ubuntu. Giao diện và tài liệu mặc định bằng tiếng Việt. Trong ứng dụng, mở **Cài đặt → Ngôn ngữ giao diện → English** để chuyển sang tiếng Anh. Lựa chọn được lưu và không đổi bố cục phím hay cách viết.
 
-| Download | Requirements and installation |
+## Tải xuống và cài đặt
+
+Chọn tệp phù hợp tại [GitHub Releases](https://github.com/legitminh/vietmoi/releases). `SHA256SUMS` chứa mã kiểm tra tệp; `BUILD-INFO.json` ghi nguồn mã và kết quả xác minh.
+
+| Tệp tải xuống | Yêu cầu và cách cài |
 | --- | --- |
-| `macos-universal.zip` | macOS 13+, Apple Silicon or Intel. Ad-hoc signed, without Developer ID notarization. Copy `VietMoi.app` to `~/Library/Input Methods/`, open it, then add **siêu việt** in System Settings → Keyboard → Text Input. macOS may require explicit local approval or a new login. Existing users should use the repository's `scripts/install.sh` to preserve registration and restart the input method. |
-| `ios-unsigned.ipa` | iOS/iPadOS 16+. Optimized device app with its keyboard extension. **Unsigned: re-sign both app and extension with your Apple account and matching App Group entitlement before installation.** This is not an App Store, TestFlight, or directly installable OTA release. For the simplest development installation, open `iOS/VietMobile.xcodeproj` in Xcode and select your signing team for both targets. Enable the keyboard in Settings → General → Keyboard → Keyboards. |
-| `android-universal-debug.apk` | Android 10+ (API 29), ARM64 or x86_64. Development signed. Install the APK, allow installation from the chosen source when prompted, and enable/select siêu việt in Android keyboard settings. No Internet permission or Full Access is needed. |
-| `windows-x64.zip` / `windows-arm64.zip` | Matching Windows 10/11 architecture. Extract to a permanent directory. Includes the real Swift engine/runtime, TSF adapter, settings app and engine smoke test. Run `install.ps1` from an elevated, matching-architecture PowerShell, then choose siêu việt with Win+Space. `install.ps1 -Uninstall` removes registration. These unsigned development packages have native engine smoke tests; interactive TSF typing remains unqualified. |
-| `ubuntu-26.04-amd64.deb` / `ubuntu-26.04-arm64.deb` | Ubuntu 26.04 with matching architecture. Run `sudo apt install ./sieuviet-*.deb` with the single package matching your machine. Includes IBus/Fcitx 5 adapters, settings, Swift engine/runtime and dependency metadata. Enable siêu việt through IBus or Fcitx 5 after installation; use one framework per session. Log in again if necessary. Other Ubuntu releases are not qualified. Remove with `sudo apt remove sieuviet`. |
+| `macos-universal.zip` | macOS 13 trở lên, Apple Silicon hoặc Intel. Giải nén, chép `VietMoi.app` vào `~/Library/Input Methods/`, mở ứng dụng rồi vào **Cài đặt hệ thống → Bàn phím → Nhập văn bản → Sửa → +** để thêm **siêu việt**. Gói được ký tạm thời, chưa được Apple công chứng bằng Developer ID; macOS có thể yêu cầu bạn cho phép mở hoặc đăng nhập lại. Khi cập nhật từ mã nguồn, dùng `bash scripts/install.sh --no-build` để giữ đăng ký và nguồn nhập đang dùng. |
+| `ios-unsigned.ipa` | iOS/iPadOS 16 trở lên. Có ứng dụng và tiện ích bàn phím, nhưng **chưa ký: phải ký lại cả hai bằng tài khoản Apple của bạn và cùng quyền App Group trước khi cài**. Đây không phải bản App Store, TestFlight hay bản cài OTA trực tiếp. Cách cài phát triển đơn giản nhất: mở `iOS/VietMobile.xcodeproj` bằng Xcode, chọn nhóm ký cho cả ứng dụng và bàn phím, rồi chạy trên thiết bị. Sau đó thêm siêu việt trong **Cài đặt → Cài đặt chung → Bàn phím → Bàn phím → Thêm bàn phím mới**. |
+| `android-universal-debug.apk` | Android 10 trở lên (API 29), ARM64 hoặc x86_64. Mở APK và cho phép cài từ nguồn tải này nếu được hỏi. Mở siêu việt, bật bàn phím trong cài đặt Android rồi chọn siêu việt làm bàn phím. Đây là bản ký phát triển. Không cần quyền Internet. |
+| `windows-x64.zip` / `windows-arm64.zip` | Windows 10/11 với kiến trúc tương ứng. Giải nén vào thư mục bạn sẽ giữ lâu dài. Gói có bộ xử lý Swift, thư viện chạy, bộ gõ TSF, ứng dụng cài đặt và chương trình kiểm tra. Mở PowerShell đúng kiến trúc bằng quyền quản trị, chạy `./install.ps1`, rồi chọn siêu việt bằng **Win+Space**. Mở `SieuvietSettings.exe` để cài đặt và gõ thử. Dùng `./install.ps1 -Language en` để xem thông báo cài bằng tiếng Anh; `./install.ps1 -Uninstall` để gỡ đăng ký. Các gói chưa ký đã qua kiểm tra bộ xử lý trên Windows thật; thao tác gõ TSF trong ứng dụng thực tế vẫn chưa được thẩm định. |
+| `ubuntu-26.04-amd64.deb` / `ubuntu-26.04-arm64.deb` | Ubuntu 26.04, đúng kiến trúc. Chạy `sudo apt install ./ten-tep.deb`, thay `ten-tep.deb` bằng đúng tệp đã tải. Gói chứa IBus, Fcitx 5, ứng dụng cài đặt, bộ xử lý Swift, thư viện chạy và thông tin phụ thuộc. Sau khi cài, thêm siêu việt trong nguồn nhập IBus hoặc cấu hình Fcitx 5; chỉ dùng một hệ nhập trong mỗi phiên. Đăng nhập lại nếu cần. Các bản Ubuntu khác chưa được thẩm định. Gỡ bằng `sudo apt remove sieuviet`. |
 
-Settings and typing remain local. Interface language defaults to Vietnamese;
-English is selectable in the app. See each platform's README for usage and tests.
+## Bắt đầu gõ
 
-## Reproduce the builds
+Chọn **âm đầu → âm đệm + âm chính → âm cuối → thanh**. Chọn **∅** khi không có âm đầu hoặc âm cuối. Thanh là lựa chọn cuối; bàn phím ghi âm tiết hoàn chỉnh và một dấu cách.
 
-On macOS with Xcode, Android SDK and the pinned Swift/Android tools installed:
+Với bố cục ascii+, nhấn lần lượt `m s e d` để gõ **má**, `x v n s` để gõ **xin**. Với cách viết **quốc ngữ**, `f r e j` cho **phở**. Đây là các lần nhấn riêng, không phải tổ hợp nhấn đồng thời. Xóa lùi quay lại một lượt chọn khi đang ghép âm; dấu cách giữ phần chưa hoàn tất.
+
+Mở ứng dụng → **Cài đặt** để chọn bố cục **ascii+ / grid4x8**, cách viết **siêu việt / quốc ngữ**, và ngôn ngữ giao diện. Trên bàn phím vật lý, nhấn riêng Shift trái thật nhanh để đổi giữa tiếng Việt và ASCII; giữ hoặc kết hợp Shift với phím khác vẫn hoạt động bình thường. Trên iPhone, chạm nhanh ⇧ để đổi chế độ; giữ ⇧ trong lúc gõ để viết hoa, chạm đúp để khóa chữ hoa. `123` và `#+=` mở số và ký hiệu.
+
+Trên iPhone/iPad, giữ phím địa cầu để chọn siêu việt. **Không cần bật Quyền truy cập đầy đủ.** iOS dùng bàn phím Apple trong ô mật khẩu, một số ô số điện thoại hoặc ứng dụng chặn bàn phím bên thứ ba.
+
+## Dữ liệu và giới hạn bản dùng thử
+
+Cài đặt được lưu trên thiết bị. Bộ gõ không lưu nội dung bạn gõ, không có lịch sử gõ thường trực và không kết nối máy chủ. Đổi ngôn ngữ chỉ đổi giao diện và hướng dẫn.
+
+Các bản dựng đã qua kiểm tra biên dịch, bộ xử lý dùng chung và các kiểm tra tích hợp được ghi trong `BUILD-INFO.json`. macOS chưa có Developer ID/công chứng; iOS cần ký lại; APK dùng chữ ký phát triển; kiểm tra gõ TSF tương tác trên Windows, thiết bị di động thật và phạm vi ứng dụng/Wayland rộng hơn vẫn còn cần thực hiện.
+
+## Tự tạo bản dựng
+
+Mã nguồn dùng chung ở `Sources/Core`. Yêu cầu và lệnh kiểm tra chi tiết nằm trong [tài liệu tiếng Anh dành cho nhà phát triển](RELEASING.en.md#reproduce-the-builds), [iOS](iOS/README.md), [Android](Android/README.md) và [Windows/Ubuntu](Desktop/README.md).
+
+Trên macOS đã có Xcode cùng bộ công cụ Android:
 
 ```sh
-python3 scripts/test-portable.py
-python3 scripts/test-package.py
-bash scripts/test-controller.sh
-bash scripts/test-mobile.sh
+python3 scripts/generate-design.py --check
 bash scripts/package-apple-android.sh
 ```
 
-The Android bootstrap is `python3 scripts/setup-android-native.py`. Build tools
-and Gradle caches are local to `build/`. See `Android/README.md` for prerequisites.
-The APK uses the local Android development signing key, which is not published.
-
-On the matching Ubuntu 26.04 architecture, using `Desktop/linux/Dockerfile`:
+Trình cài từ mã nguồn mặc định dùng tiếng Việt. Ví dụ dùng thông báo tiếng Anh:
 
 ```sh
-python3 scripts/build-linux.py --prefix /usr --destdir build/linux-system-root
-python3 scripts/package-ubuntu.py
+SIEUVIET_LANGUAGE=en bash scripts/install.sh --no-build
 ```
 
-Windows uses `.github/workflows/windows-build.yml` or a matching-architecture
-Visual Studio Developer PowerShell with Swift from `.swift-version`:
-
-```powershell
-./scripts/build-windows.ps1 -Architecture x64
-# Native Windows ARM64:
-./scripts/build-windows.ps1 -Architecture ARM64
-```
-
-Run the native desktop integration suites described in `Desktop/README.md`.
-Full macOS host, physical mobile, Windows interactive, and Wayland compatibility
-qualification remains separate from successful compilation and engine checks.
-
-## Publish
-
-Commit the local source to `legitminh/vietmoi`, run the Windows workflow for that
-commit, and collect both verified native packages alongside the local builds in
-`build/releases`. Include this installation guide, third-party notices and
-`SHA256SUMS`. Publish version `v0.12.0` as a prerelease while these signing and
-qualification limits apply. Never publish development signing keys, provisioning
-profiles, SDKs, build caches, emulator data, or personal settings.
+Giữ nguyên mã định danh ứng dụng và `VietMoi.app` khi cập nhật. Không công khai khóa ký, hồ sơ cấp phép, bộ SDK, dữ liệu trình mô phỏng hoặc cài đặt cá nhân.

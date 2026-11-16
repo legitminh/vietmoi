@@ -34,7 +34,8 @@ jobs:
           $release = Get-Content Design/brand.json | ConvertFrom-Json
           $arch = '${{ matrix.architecture }}'.ToLowerInvariant()
           $stage = 'build/windows-package-${{ matrix.architecture }}'
-          Copy-Item RELEASING.md "$stage/README.md"
+          python scripts/copy-guides.py $stage
+          if ($LASTEXITCODE) { throw "Bilingual guide packaging failed" }
           Copy-Item ThirdPartyNotices "$stage/ThirdPartyNotices" -Recurse
           New-Item -ItemType Directory -Force build/releases | Out-Null
           Compress-Archive -Path "$stage/*" -DestinationPath "build/releases/sieuviet-$($release.version)-windows-$arch.zip"

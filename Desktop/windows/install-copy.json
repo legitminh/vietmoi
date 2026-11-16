@@ -1,0 +1,30 @@
+{
+  "installWindowsMissingAdapter": {
+    "vi": "Không tìm thấy SieuvietTSF.dll trong gói cài đặt.",
+    "en": "SieuvietTSF.dll is missing from the installation package."
+  },
+  "installWindowsMissingEngine": {
+    "vi": "Cần có SieuvietEngine.dll trước khi đăng ký bộ gõ.",
+    "en": "SieuvietEngine.dll is required before registration."
+  },
+  "installWindowsMissingSmoke": {
+    "vi": "Không tìm thấy desktop-session-tests.exe để kiểm tra bộ gõ.",
+    "en": "desktop-session-tests.exe is missing; the engine cannot be checked."
+  },
+  "installWindowsSmokeFailed": {
+    "vi": "Kiểm tra bộ gõ không đạt; đã bỏ qua bước đăng ký.",
+    "en": "The shared-engine smoke test failed; registration was skipped."
+  },
+  "installWindowsRegistrationFailed": {
+    "vi": "Đăng ký TSF không thành công. Kiểm tra quyền quản trị và kiến trúc của PowerShell cùng gói cài đặt.",
+    "en": "TSF registration failed. Check administrator access and matching PowerShell/package architectures."
+  },
+  "installWindowsRegistered": {
+    "vi": "Đã đăng ký. Chọn siêu việt bằng Win+Space. Mở SieuvietSettings.exe để cài đặt và gõ thử. Dùng -Language en để xem hướng dẫn cài bằng tiếng Anh.",
+    "en": "Registered. Select siêu việt with Win+Space. Open SieuvietSettings.exe for settings and practice. Use -Language vi for Vietnamese installation messages."
+  },
+  "installWindowsRemoved": {
+    "vi": "Đã gỡ đăng ký siêu việt. Cài đặt cá nhân vẫn được giữ.",
+    "en": "siêu việt registration was removed. Personal settings were preserved."
+  }
+}

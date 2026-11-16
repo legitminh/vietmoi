@@ -1,51 +1,39 @@
-# siêu việt for Android
+**Tiếng Việt** · [English](README.en.md)
 
-Native Android app and system keyboard, with the original Swift engine compiled
-for ARM64 and x86_64. Minimum Android 10/API 29; compiled/targeted at API 36.
-The current development device is an Android 16/API 36 ARM64 emulator on the Mac.
-Other API levels and physical/OEM devices still need release qualification.
+# siêu việt cho Android
 
-## Using the keyboard
+Bàn phím hệ thống, ứng dụng cài đặt và ô gõ thử cho Android 10 trở lên (API 29). APK dùng chung bộ xử lý Swift, không sao chép bảng âm sang Kotlin. Có bản phổ dụng cho ARM64 và x86_64.
 
-The app's **Thử bàn phím** screen uses the actual installed input method in a
-separate process. **Cài đặt** selects ascii+/grid4x8, siêu việt/quốc ngữ, and the
-interface language. Vietnamese is the default; English is available for learners.
-There are no configuration pickers or instruction strips on the keyboard itself.
+## Cài và bật bàn phím
 
-- Four rounds: initial → onglide/vowel → final → tone, then exactly one space.
-- Both modes use phonetic previews; quốc ngữ converts only on tone completion.
-- Backspace undoes a round, then deletes native text by grapheme. Hold to repeat.
-- Space and ABC preserve partial words. Escape cancels an owned composition.
-- ABC, uppercase, and shared number/symbol pages support literal input. Return
-  follows the editor's action or inserts a newline.
-- A short isolated Left Shift tap toggles literal mode on an attached keyboard;
-  holds, chords and Right Shift retain native behavior. Repeated atom keys do not
-  advance rounds. The tap detector is shared with the Apple implementation.
-- Grid Clear deletes only the latest commit whose surrounding text verifies.
-  Unknown context never permits deletion of an assumed prior word.
+1. Tải `android-universal-debug.apk` từ [GitHub Releases](https://github.com/legitminh/vietmoi/releases).
+2. Mở tệp. Nếu Android hỏi, cho phép cài ứng dụng từ nguồn tải này rồi xác nhận cài. Đây là APK ký phát triển, không phải bản cửa hàng.
+3. Mở **siêu việt**, chọn **Bật bàn phím** và bật siêu việt trong cài đặt bàn phím Android.
+4. Quay lại ứng dụng, chọn **Chọn bàn phím → siêu việt**. Chạm ô gõ thử để kiểm tra.
 
-The revised vowel map has 24 choices: **oo → a, wê → n, wi → m**, with wô/wư/wu
-removed. Final **o** is unchanged. Examples of physical ASCII+ key sequences:
+Không cần tài khoản Google hoặc dịch vụ trả phí để dùng bản cài cục bộ. Nếu chữ ký của bản đang cài khác với APK tải về, Android không cho cập nhật trực tiếp; xuất/ghi lại cài đặt bạn cần trước khi tự quyết định gỡ bản cũ. Không cần gỡ khi chữ ký khớp.
 
-| Keys | sieuviet | quốc ngữ |
-| --- | --- | --- |
-| msed | má | má |
-| frej | fở | phở |
-| rwos | răo | rau |
-| imoj | khwỉo | khuỷu |
-| xaqs | xoong | xoong |
+## Cách gõ
 
-One space follows each completed word. Touch users select the displayed atoms.
-When using the Mac keyboard with the emulator, use the Mac's ABC input source so
-the desktop input method does not transform keys before Android receives them.
+Chọn lần lượt **âm đầu → âm đệm + âm chính → âm cuối → thanh**; dùng ∅ cho âm vắng. Trên cảm ứng, chạm âm ghi trên phím. Với bàn phím vật lý, các ví dụ ascii+ là `msed → má`, `xvns → xin`, `frej → phở` khi dùng quốc ngữ. Sau mỗi âm tiết hoàn chỉnh có một dấu cách.
 
-## Build and test on this Mac
+- Xóa lùi quay lại một lượt; khi không ghép âm thì xóa bình thường, kể cả văn bản có emoji.
+- Dấu cách và chuyển chế độ giữ phần đang gõ dở, không tự đoán âm còn thiếu.
+- Chọn ABC để gõ văn bản nguyên dạng. Số, ký hiệu, xuống dòng và thao tác của ô nhập dùng các phím tương ứng.
+- Với bàn phím vật lý, nhấn riêng Shift trái thật nhanh để đổi tiếng Việt / ASCII; giữ hoặc dùng cùng phím khác vẫn là Shift. Giữ lặp phím thành phần không chuyển nhiều lượt.
+- Phím Xóa của bố cục lưới chỉ xóa chu kỳ vừa ghi khi văn bản xung quanh khớp; không xóa dựa trên phỏng đoán.
 
-Commands below run from the repository's `vietmoi` directory. Android SDK 36,
-build-tools 36.0.0, the emulator, and the Google Play ARM64 API 36 image are already
-installed in `~/Library/Android/sdk`. Override `ANDROID_HOME` for another location.
-Java 25 and the checksum-pinned Gradle 9.8.1 wrapper build AGP 9.5.0's native Kotlin
-support; there are no third-party UI runtime dependencies.
+Bảng âm chính có 24 lựa chọn: oo ở a, wê ở n, wi ở m; âm cuối o giữ nguyên. Xem [bảng phím đầy đủ](../README.md).
+
+## Cài đặt và ngôn ngữ
+
+Trong ứng dụng, chọn bố cục **ascii+ / grid4x8**, cách viết **siêu việt / quốc ngữ** và **Tiếng Việt / English**. Tiếng Việt là mặc định; ngôn ngữ được lưu, không đổi các lựa chọn gõ. Cài đặt mới được bộ gõ đọc khi kích hoạt; từ đang ghép giữ cấu hình đã bắt đầu.
+
+Ứng dụng và tiến trình bàn phím tách nhau. Chỉ ứng dụng ghi bản cài đặt nguyên tử; bàn phím dùng bản trong bộ nhớ lúc gõ. Không có quyền Internet, phân tích sử dụng hay lịch sử gõ thường trực. Giao diện theo chế độ sáng/tối của hệ thống.
+
+## Tạo bản dựng và kiểm tra
+
+Trên máy Mac có Android SDK, Java và Xcode theo [tài liệu kỹ thuật tiếng Anh](README.en.md):
 
 ```sh
 python3 scripts/setup-android-native.py
@@ -54,81 +42,6 @@ python3 scripts/android-emulator.py
 python3 scripts/test-android.py --no-build
 ```
 
-The bootstrap puts the matching open-source Swift 6.4.2 compiler, Android Swift
-SDK and NDK r30 under `build/android-tools`. It verifies the SDK checksum and
-toolchain package signature. It extracts the compiler locally, without changing
-Xcode, system toolchains or shell defaults. Initial downloads are several GB.
-The Android SDK/system image itself must be installed separately.
+Công cụ tải trình biên dịch Swift, SDK Swift cho Android và NDK vào `build/android-tools`, không thay Xcode hay bộ công cụ hệ thống. Dùng `--abis arm64-v8a` với lệnh tạo bản dựng nếu chỉ cần ARM64. APK ở `Android/app/build/outputs/apk/debug/app-debug.apk`; bản phổ dụng lớn vì kèm thư viện Swift cho hai kiến trúc.
 
-The build helper packages both `arm64-v8a` and `x86_64` by default. Use
-`--abis arm64-v8a` for an ARM64-only APK. It invokes the same native build from
-Gradle, so changing shared sources also rebuilds the Android engine.
-
-Artifacts:
-
-- App: `Android/app/build/outputs/apk/debug/app-debug.apk`
-- Tests: `Android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk`
-- Native libraries/manifest: `build/android-native/<abi>/`
-- Test result: `build/android-instrumentation.log`
-
-These are locally development-signed builds, not a published store release.
-The universal debug APK is approximately 129 MB because it contains the Swift,
-Foundation/ICU and C++ runtimes for two architectures. ARM64 alone is about 65 MB.
-All 38 packaged native libraries have at least 16 KB LOAD alignment.
-
-Native tools can be overridden with `SIEUVIET_SWIFT_TOOLCHAIN` (root containing
-`usr/bin/swift`), `SIEUVIET_SWIFT_SDKS` (artifact-bundle directory), and
-`ANDROID_NDK_HOME`. The bootstrap currently automates macOS; other build hosts
-must supply those paths themselves.
-
-## Emulator and manual installation
-
-The helper creates only **Sieuviet_API_36**, serial **emulator-5556**, under
-`build/android-avd`. It leaves other emulators and physical devices alone.
-`--headless` supports automated tests; omit it for the visible window. Use
-`--restart` to restart this same AVD with a window after headless testing.
-Emulator diagnostics are in `build/android-emulator.log`.
-
-Install the APK, enable **Sieuviet** in Android keyboard settings, then select it
-using the app's **Select keyboard** button. In the dedicated emulator, equivalent
-commands are:
-
-```sh
-adb -s emulator-5556 install -r Android/app/build/outputs/apk/debug/app-debug.apk
-adb -s emulator-5556 shell ime enable com.minh.sieuviet.android/.SieuvietInputMethod
-adb -s emulator-5556 shell ime set com.minh.sieuviet.android/.SieuvietInputMethod
-adb -s emulator-5556 shell am start -n com.minh.sieuviet.android/.MainActivity --ez openKeyboard true
-```
-
-No Google account or paid service is needed for the local emulator.
-
-## Shared code and validation
-
-`Sources/Core` owns atoms, default mappings, schema migration, rendering, guide
-rows/labels, symbol pages and Shift detection. `Sources/Bridge` exposes the C ABI.
-Android's C++ JNI bridge only transfers handles/UTF-8 and calls that ABI. Kotlin
-owns Android Views, editor operations, lifecycle and scan-code translation; it
-has no Vietnamese spelling or custom mapping table.
-
-The containing app writes one atomic settings snapshot. The IME reads its base
-file at activation and uses an in-memory configuration. Typing makes no settings
-reads/writes. The APK has no Internet permission, analytics or typing-history log.
-
-The test runner installs the real IME and checks actual native editor text.
-Tests include both outputs/layouts, every phase, partial boundaries, settings
-transferred between processes, safe Clear, selection restoration, focus changes,
-emoji deletion, native Return, symbols/case, physical typing/Shift, aligned columns
-and rotation. Native JNI tests execute all **79,200** complete paths across the two
-outputs. The JUnit suite restores the previous enabled/default IME state.
-
-```sh
-python3 scripts/test-android.py
-python3 scripts/test-package.py
-python3 scripts/test-portable.py
-```
-
-Pass `--serial DEVICE_ID` to target another explicitly selected test device, or
-`--class fully.qualified.Class#method` for a targeted regression. The runner checks
-JUnit's output because `adb am instrument` can return exit code zero for failed
-tests. Remote physical Pixel/Samsung checks remain a release gate; emulator and
-x86_64 compile success are not physical-device compatibility evidence.
+Trình mô phỏng riêng là **Sieuviet_API_36**, `emulator-5556`. Không đổi bàn phím của thiết bị khác. Khi điều khiển trình mô phỏng bằng bàn phím Mac, chọn nguồn nhập ABC trên Mac để tránh bộ gõ macOS biến đổi phím trước khi Android nhận. Kiểm tra trên Pixel/Samsung thật vẫn là công việc thẩm định riêng.

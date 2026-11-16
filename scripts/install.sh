@@ -1,13 +1,14 @@
 #!/bin/bash
 set -euo pipefail
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+message() { python3 "$PROJECT_ROOT/scripts/message.py" "$@"; }
 if [ "${1:-}" != "--no-build" ]; then bash "$PROJECT_ROOT/scripts/build.sh"; fi
 SOURCE="$PROJECT_ROOT/build/VietMoi.app"
 DESTINATION="$HOME/Library/Input Methods/VietMoi.app"
-if [ ! -x "$SOURCE/Contents/MacOS/VietMoi" ]; then echo "Build the app first." >&2; exit 1; fi
+if [ ! -x "$SOURCE/Contents/MacOS/VietMoi" ]; then message installBuildFirst >&2; exit 1; fi
 EXPECTED="$(python3 "$PROJECT_ROOT/scripts/mac-fingerprint.py")"
 if [ ! -f "$SOURCE/Contents/Resources/BuildFingerprint.txt" ] || [ "$(cat "$SOURCE/Contents/Resources/BuildFingerprint.txt")" != "$EXPECTED" ]; then
-  echo "Mac build is stale. Run bash scripts/build.sh before installing." >&2
+  message installStale >&2
   exit 1
 fi
 mkdir -p "$PROJECT_ROOT/build/module-cache"
@@ -18,15 +19,15 @@ if "$PROJECT_ROOT/build/input-source" current | /usr/bin/grep -Fq "Current input
   WAS_ACTIVE=true
 fi
 # Disconnect the old process before replacing it; macOS may otherwise retain a stale session.
-"$PROJECT_ROOT/build/input-source" prepare-update
+"$PROJECT_ROOT/build/input-source" prepare-update > /dev/null
 mkdir -p "$HOME/Library/Input Methods"
 # Stop only this input method during an update; never restart system services.
 /usr/bin/pkill -x VietMoi 2>/dev/null || true
 /usr/bin/ditto "$SOURCE" "$DESTINATION"
 /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "$DESTINATION"
-"$PROJECT_ROOT/build/input-source" register "$DESTINATION"
+"$PROJECT_ROOT/build/input-source" register "$DESTINATION" > /dev/null
 if [ "$WAS_ACTIVE" = true ]; then
-  "$PROJECT_ROOT/build/input-source" select
+  "$PROJECT_ROOT/build/input-source" select > /dev/null
 fi
 mkdir -p "$HOME/Applications"
 LAUNCHER="$HOME/Applications/siêu việt.app"
@@ -39,12 +40,12 @@ if [ ! -e "$LAUNCHER" ] && [ ! -L "$LAUNCHER" ]; then
 elif [ -L "$LAUNCHER" ] && [ "$(readlink "$LAUNCHER")" = "$DESTINATION" ]; then
   :
 else
-  echo "Existing $LAUNCHER was preserved; launch $DESTINATION directly."
+  message installPreserved "path=$LAUNCHER" "destination=$DESTINATION"
 fi
-echo "Installed: $DESTINATION"
-echo "Launch: $LAUNCHER"
-echo "Add siêu việt in System Settings → Keyboard → Text Input → Edit → + (Vietnamese or search siêu việt)."
-echo "If it is not listed yet, log out and back in; macOS may cache input methods."
+message installComplete "path=$DESTINATION"
+message installLaunch "path=$LAUNCHER"
+message installMacHelp
+message installMacLogin
 
 # A copied bundle is insufficient: restart and verify the process being used.
 /usr/bin/codesign --verify --deep --strict "$DESTINATION"
@@ -57,7 +58,7 @@ for attempt in {1..30}; do
     command="$(/bin/ps -p "$pid" -o command=)"
     if [[ "$command" == "$DESTINATION/Contents/MacOS/VietMoi"* ]]; then
       RUNNING=true
-      echo "Verified running siêu việt, PID $pid, build fingerprint $EXPECTED"
+      message installMacVerified "pid=$pid" "fingerprint=$EXPECTED"
       break
     fi
   done
@@ -65,6 +66,6 @@ for attempt in {1..30}; do
   sleep 0.1
 done
 if [ "$RUNNING" != true ]; then
-  echo "Installed bundle verified, but the updated Mac process did not start." >&2
+  message installMacNotRunning >&2
   exit 1
 fi

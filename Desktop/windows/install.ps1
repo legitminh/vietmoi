@@ -1,18 +1,19 @@
-# Run from an elevated PowerShell of the package's architecture. Keep this
-# directory intact; registration points to its absolute DLL path.
-param([switch]$Uninstall)
+# Vietnamese by default. Use -Language en for English.
+param([switch]$Uninstall, [ValidateSet('vi','en')][string]$Language = 'vi')
 $ErrorActionPreference = 'Stop'
+$copy = Get-Content (Join-Path $PSScriptRoot 'install-copy.json') -Raw -Encoding utf8 | ConvertFrom-Json
+function Text([string]$Key) { return $copy.$Key.$Language }
 $adapter = Join-Path $PSScriptRoot 'SieuvietTSF.dll'
-if (!(Test-Path $adapter)) { throw 'SieuvietTSF.dll is missing' }
+if (!(Test-Path $adapter)) { throw (Text 'installWindowsMissingAdapter') }
 if (!$Uninstall) {
-    if (!(Test-Path (Join-Path $PSScriptRoot 'SieuvietEngine.dll'))) { throw 'Build/package the Swift engine before registration' }
+    if (!(Test-Path (Join-Path $PSScriptRoot 'SieuvietEngine.dll'))) { throw (Text 'installWindowsMissingEngine') }
     $smoke = Join-Path $PSScriptRoot 'desktop-session-tests.exe'
-    if (!(Test-Path $smoke)) { throw 'desktop-session-tests.exe is missing' }
-    & $smoke (Join-Path $PSScriptRoot 'SieuvietEngine.dll')
-    if ($LASTEXITCODE -ne 0) { throw 'Shared-engine smoke test failed; registration skipped' }
+    if (!(Test-Path $smoke)) { throw (Text 'installWindowsMissingSmoke') }
+    & $smoke (Join-Path $PSScriptRoot 'SieuvietEngine.dll') | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw (Text 'installWindowsSmokeFailed') }
 }
 $regsvr = Join-Path $env:SystemRoot 'System32/regsvr32.exe'
-$args = @('/s'); if ($Uninstall) { $args += '/u' }; $args += "`"$adapter`""
-$process = Start-Process $regsvr -ArgumentList $args -Wait -PassThru
-if ($process.ExitCode -ne 0) { throw "TSF registration failed ($($process.ExitCode)). Check elevation and matching process/package architecture." }
-if (!$Uninstall) { Write-Host 'Registered. Select Sieuviet with Win+Space. Open SieuvietSettings.exe for settings and a typing field.' }
+$registrationArgs = @('/s'); if ($Uninstall) { $registrationArgs += '/u' }; $registrationArgs += "`"$adapter`""
+$process = Start-Process $regsvr -ArgumentList $registrationArgs -Wait -PassThru
+if ($process.ExitCode -ne 0) { throw (Text 'installWindowsRegistrationFailed') }
+Write-Host (Text $(if ($Uninstall) { 'installWindowsRemoved' } else { 'installWindowsRegistered' }))
