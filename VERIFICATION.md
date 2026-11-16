@@ -1,3 +1,9 @@
+# Vietnamese-default update — 2026-11-16
+
+Version 0.12.1 (38) adds Vietnamese-default consumer documentation, English alternatives, bilingual installer messages and remaining accessibility-copy fixes. Existing language and keyboard preferences are preserved. Windows x64/ARM64 native builds passed in https://github.com/legitminh/vietmoi/actions/runs/43881845107 ; each packaged engine passed all 32 policy checks. macOS controller checks (296), mobile session checks (86), Android instrumentation (10 tests) and current shared package/ABI checks passed. The Mac bundle is installed and running with matching signature and build fingerprint. Ubuntu packages retain both installation-guide languages.
+
+The 0.12.0 release page also receives a Vietnamese translation; legacy binary signing and qualification limits remain the same. See RELEASING.md / RELEASING.en.md for current consumer instructions.
+
 # GitHub release builds — 2026-11-15
 
 Version 0.12.0, build 37, is packaged for macOS, iOS, Android, Windows and Ubuntu.

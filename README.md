@@ -69,6 +69,17 @@ Lượt âm chính có **24 lựa chọn**: wê ở n, wi ở m, oo ở a. Khôn
 
 Thanh luôn đặt trên âm chính, không đặt trên âm đệm hoặc âm cuối. Vị trí mặc định với các nguyên âm ghép là iế, ướ, uố và oó. Bàn phím cho phép tự do ghép các lựa chọn, không dùng từ điển để chặn tổ hợp lạ.
 
+## Cách chuyển sang quốc ngữ
+
+- f/z chuyển thành ph/gi; g/ng thành gh/ngh trước nguyên âm trước. c/k thành k trước nguyên âm trước và qu khi có âm đệm w. Âm i chung trong gi+i/iê chỉ viết một lần.
+- Âm đệm w viết o trước a/ă/e, u ở các vị trí khác và sau q. i/iê có âm đệm dùng y/ya/yê.
+- Âm cuối o (/w/) viết o sau a dài/e, u ở các vị trí khác. ă ngắn thành a trong au/ay; âm cuối i viết y sau ă/â, còn lại viết i. a dài vẫn phân biệt trong ao/ai.
+- iê/uô/ươ mở thành ia/ua/ưa; khi có âm cuối thì giữ iê/uô/ươ. yê dùng sau u hoặc đầu âm tiết. Lựa chọn oo vẫn là oo.
+- Âm cuối c/ng theo cách phát âm Hà Nội sau e/ê/i dùng ch/nh; e trong các vần này viết a, như ach/anh. Vẫn có thể chọn trực tiếp ch/nh.
+- Thanh ở nguyên âm chính: hoá/huỷ, iế/uố/ướ và ía/úa/ứa khi không có âm cuối. Quy ước i đứng riêng dùng y; phụ âm thông thường đi với i vẫn dùng i.
+
+Đây là chuyển cách viết từ cấu trúc âm, không phải sửa theo từ điển. Bộ gõ không hợp nhất các âm đã chọn theo phương ngữ, không chặn tổ hợp lạ, kể cả thanh ngang với âm cuối t. Ví dụ oo giữ xoong/boong/soóc riêng với o.
+
 ## Sửa, chuyển chế độ và viết hoa
 
 - **Nhấn riêng Shift trái thật nhanh:** đổi tiếng Việt / ASCII khi nhả phím. Giữ phần đang gõ, kết thúc chu kỳ mà không thêm dấu cách. Giữ Shift hoặc dùng cùng phím khác vẫn là Shift thông thường; Shift phải không đổi chế độ.
