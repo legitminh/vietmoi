@@ -38,10 +38,22 @@ try {
     foreach ($path in ($runtimePaths | Select-Object -Unique)) {
         if (Test-Path $path) { Get-ChildItem $path -Filter '*.dll' -File | Copy-Item -Destination $stage }
     }
+    # Include the matching redistributable CRT rather than relying on Visual
+    # Studio or a separately installed redistributable on the user's machine.
+    $crtRoot = Join-Path $env:VCToolsRedistDir $Architecture
+    $crt = @(Get-ChildItem $crtRoot -Directory -Filter 'Microsoft.VC*.CRT')
+    if (!$crt.Count) { throw "No matching Visual C++ redistributable CRT found in $crtRoot" }
+    foreach ($directory in $crt) {
+        Get-ChildItem $directory.FullName -Filter '*.dll' -File | Copy-Item -Destination $stage
+    }
     # Loading and exercising the packaged library catches missing DLLs, ABI and
     # architecture mismatches. Do not register the text service if this fails.
-    & (Join-Path $stage 'desktop-session-tests.exe') (Join-Path $stage 'SieuvietEngine.dll')
-    if ($LASTEXITCODE) { throw 'Packaged Windows shared-engine checks failed' }
+    $originalPath = $env:Path
+    try {
+        $env:Path = "$stage;$env:SystemRoot\System32;$env:SystemRoot"
+        & (Join-Path $stage 'desktop-session-tests.exe') (Join-Path $stage 'SieuvietEngine.dll')
+        if ($LASTEXITCODE) { throw 'Packaged Windows shared-engine checks failed' }
+    } finally { $env:Path = $originalPath }
     Copy-Item Design/brand.json (Join-Path $stage 'release.json')
     Write-Host "Built and smoke-tested $stage. Run its install.ps1 elevated for TSF registration; test typing separately."
 } finally { Pop-Location }

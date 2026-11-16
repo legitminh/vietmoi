@@ -1,9 +1,9 @@
 #include "Platform.hpp"
 #include "Design.hpp"
 #include "TsfCompat.hpp"
-#ifdef __MINGW32__
+// InputScope GUIDs are not supplied by every Windows SDK's uuid.lib.
+// Instantiate the SDK definitions here for both MSVC and LLVM-MinGW.
 #include <initguid.h>
-#endif
 #include <inputscope.h>
 #include <functional>
 #include <atomic>
