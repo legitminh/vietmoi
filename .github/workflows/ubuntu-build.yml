@@ -1,0 +1,34 @@
+name: Ubuntu release builds
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  ubuntu:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            architecture: amd64
+          - runner: ubuntu-24.04-arm
+            architecture: arm64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Build the pinned Ubuntu 26.04 toolchain image
+        run: docker build -t sieuviet-release -f Desktop/linux/Dockerfile .
+      - name: Build, package and verify the installed engine
+        run: |
+          docker run --rm --network none --mount "type=bind,source=$PWD,target=/workspace" sieuviet-release sh -ec '
+            python3 scripts/build-linux.py --prefix /usr --destdir build/linux-system-root
+            python3 scripts/package-ubuntu.py
+            dpkg -i build/releases/*.deb
+            build/linux-native/desktop-session-tests /usr/lib/sieuviet/libSieuvietEngine.so
+          '
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ubuntu-${{ matrix.architecture }}
+          path: build/releases/*.deb
+          if-no-files-found: error

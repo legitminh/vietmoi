@@ -11,6 +11,10 @@ on:
         required: true
         default: v0.12.0
         type: string
+      ubuntu_build_run:
+        description: Optional successful Ubuntu build run ID
+        default: ''
+        type: string
 permissions:
   actions: read
   contents: write
@@ -23,12 +27,20 @@ jobs:
       GH_REPO: ${{ github.repository }}
       BUILD_RUN: ${{ inputs.build_run }}
       RELEASE_TAG: ${{ inputs.release_tag }}
+      UBUNTU_BUILD_RUN: ${{ inputs.ubuntu_build_run }}
     steps:
       - name: Require a successful build and an existing draft
         run: |
           test "$(gh run view "$BUILD_RUN" --json conclusion --jq .conclusion)" = success
           test "$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft)" = true
+          if [ -n "$UBUNTU_BUILD_RUN" ]; then
+            test "$(gh run view "$UBUNTU_BUILD_RUN" --json conclusion --jq .conclusion)" = success
+          fi
       - name: Transfer verified build artifacts directly to the draft release
         run: |
           gh run download "$BUILD_RUN" --dir artifacts
-          gh release upload "$RELEASE_TAG" artifacts/windows-*/*.zip --clobber
+          if [ -n "$UBUNTU_BUILD_RUN" ]; then gh run download "$UBUNTU_BUILD_RUN" --dir artifacts; fi
+          shopt -s nullglob
+          files=(artifacts/windows-*/*.zip artifacts/ubuntu-*/*.deb)
+          test "${#files[@]}" -gt 0
+          gh release upload "$RELEASE_TAG" "${files[@]}" --clobber
