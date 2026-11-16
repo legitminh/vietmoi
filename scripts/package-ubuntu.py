@@ -2,7 +2,6 @@
 """Package a staged /usr tree on its matching Ubuntu build host."""
 import argparse
 import json
-import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -19,6 +18,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--stage", type=Path, default=ROOT / "build/linux-system-root")
     parser.add_argument("--output", type=Path, default=ROOT / "build/releases")
+    parser.add_argument("--prepare-only", type=Path, help="Write a package tree for dpkg-deb on another host")
     args = parser.parse_args()
     stage = args.stage.resolve()
     if not (stage / "usr/lib/sieuviet/libSieuvietEngine.so").is_file():
@@ -32,8 +32,11 @@ def main():
     dependencies = {"python3", "python3-gi", "gir1.2-gtk-3.0"}
     # Resolve the complete native dependency closure, excluding the bundled Swift runtime.
     for binary in stage.rglob("*"):
-        if not binary.is_file() or binary.read_bytes()[:4] != b"\x7fELF":
+        if not binary.is_file():
             continue
+        with binary.open("rb") as stream:
+            if stream.read(4) != b"\x7fELF":
+                continue
         linked = output("ldd", str(binary))
         if "not found" in linked:
             raise SystemExit(f"Missing packaged dependency for {binary}:\n{linked}")
@@ -49,7 +52,7 @@ def main():
             dependencies.add(f"{package} (>= {version})")
     destination = args.output.resolve()
     destination.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix="sieuviet-deb-", dir=ROOT / "build") as temporary:
+    with tempfile.TemporaryDirectory(prefix="sieuviet-deb-") as temporary:
         tree = Path(temporary)
         shutil.copytree(stage / "usr", tree / "usr")
         control = tree / "DEBIAN"
@@ -70,6 +73,10 @@ def main():
         notices = ROOT / "ThirdPartyNotices"
         if notices.exists():
             shutil.copytree(notices, document / "ThirdPartyNotices")
+        if args.prepare_only:
+            shutil.copytree(tree, args.prepare_only.resolve())
+            print(args.prepare_only.resolve())
+            return
         archive = destination / f"sieuviet-{release['version']}-ubuntu-{ubuntu}-{arch}.deb"
         subprocess.run(["dpkg-deb", "--root-owner-group", "--build", "-Zxz", str(tree), str(archive)], check=True)
         print(archive)

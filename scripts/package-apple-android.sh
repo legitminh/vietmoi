@@ -7,7 +7,8 @@ VERSION="$(python3 -c 'import json; print(json.load(open("Design/brand.json"))["
 OUTPUT="$ROOT/build/releases"
 mkdir -p "$OUTPUT" "$ROOT/build/release-macos" "$ROOT/build/release-ios/Payload"
 SIEUVIET_MAC_ARCHS="arm64 x86_64" bash scripts/build.sh
-xcrun lipo -verify_arch arm64 x86_64 build/VietMoi.app/Contents/MacOS/VietMoi
+ARCHITECTURES="$(xcrun lipo -archs build/VietMoi.app/Contents/MacOS/VietMoi)"
+[[ " $ARCHITECTURES " == *" arm64 "* && " $ARCHITECTURES " == *" x86_64 "* ]]
 codesign --verify --deep --strict build/VietMoi.app
 ditto build/VietMoi.app build/release-macos/VietMoi.app
 cp RELEASING.md build/release-macos/README.md
