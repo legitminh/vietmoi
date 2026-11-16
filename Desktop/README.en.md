@@ -69,13 +69,7 @@ the host's `/usr`, use:
 python3 scripts/build-linux.py --prefix /usr --destdir build/linux-system-root
 ```
 
-Development archives from this verification run are at
-`build/linux-desktop/sieuviet-linux-arm64-0.12.2-dev.tar.gz` and
-`build/linux-desktop-x64/sieuviet-linux-x64-0.12.2-dev.tar.gz`. They contain the
-system-prefix tree for the tested Ubuntu 26.04 environment, not a universal
-Linux installer. The GitHub prerelease now also provides Ubuntu 26.04 `.deb`
-packages for both architectures, with bundled Swift runtimes and dependency
-metadata. Both packages passed installation and installed-engine smoke checks.
+The GitHub prerelease provides Ubuntu 26.04 `.deb` packages for amd64 and arm64, with bundled Swift runtimes and dependency metadata. These are distribution-specific packages. The native build workflow verifies package installation and the installed engine on both architectures.
 
 The staged tree contains `/usr/lib/sieuviet` with the engine and its Swift runtime,
 IBus component metadata/executable, the Fcitx addon in Fcitx's configured library

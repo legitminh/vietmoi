@@ -1,3 +1,9 @@
+# Final language coverage — 2026-11-16
+
+Version 0.12.2 (39) finishes localized grid-guide and default-profile accessibility labels, Android Clear accessibility, and Linux launcher/package descriptions. Changing interface language preserves layout, spelling and ASCII mode. macOS controller checks (296), mobile session checks (86), and all 10 Android instrumentation tests pass, including the 79,200 native constructions and Vietnamese Clear accessibility assertion. UiAutomator now waits for first-launch keyboard readiness and re-queries stale accessibility nodes before gestures.
+
+Native Windows x64/ARM64 builds and 36 packaged-engine checks per architecture pass: https://github.com/legitminh/vietmoi/actions/runs/43892416982 . Native Ubuntu amd64/arm64 jobs build, install and pass 36 checks per architecture: https://github.com/legitminh/vietmoi/actions/runs/43894304675 . Apple/Android/Windows binary source: `78e90783ffb655090cdefc6b845a6c9e2fc349f8`; Ubuntu build source: `c2c3bb332d1a112a44aabbeb00a2dd81442a11f1` (additional packaging/CI metadata only). macOS 0.12.2 (39) is installed and running with verified signature and fingerprint `a72a2e1146882e060049c98ef8c5300ca8d7be3e1e5b48fe182486aca3cdba8d`.
+
 # Vietnamese-default update — 2026-11-16
 
 Version 0.12.1 (38) adds Vietnamese-default consumer documentation, English alternatives, bilingual installer messages and remaining accessibility-copy fixes. Existing language and keyboard preferences are preserved. Windows x64/ARM64 native builds passed in https://github.com/legitminh/vietmoi/actions/runs/43881845107 ; each packaged engine passed all 32 policy checks. macOS controller checks (296), mobile session checks (86), Android instrumentation (10 tests) and current shared package/ABI checks passed. The Mac bundle is installed and running with matching signature and build fingerprint. Ubuntu packages retain both installation-guide languages.

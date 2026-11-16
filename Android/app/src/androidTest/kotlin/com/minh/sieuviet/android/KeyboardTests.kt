@@ -23,7 +23,14 @@ class KeyboardTests {
     private lateinit var activity: Activity
     private fun objectById(id: String): UiObject2 = device.wait(Until.findObject(By.res(PACKAGE, id)), 4000)
         ?: throw AssertionError("Missing $id")
-    private fun tap(id: String) { objectById(id).click(); device.waitForIdle(1000) }
+    private fun tap(id: String) {
+        // Focus changes replace the key views; stale nodes have not dispatched a click.
+        repeat(3) {
+            try { objectById(id).click(); device.waitForIdle(1000); return }
+            catch (_: androidx.test.uiautomator.StaleObjectException) { device.waitForIdle(1000) }
+        }
+        objectById(id).click(); device.waitForIdle(1000)
+    }
     private fun type(keys: String) { for (key in keys) tap("key_" + if (key == ';') "semicolon" else key) }
     private fun expectText(text: String, id: String = "test_editor") {
         var actual = ""
@@ -45,6 +52,8 @@ class KeyboardTests {
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
         device.waitForIdle()
         tap("test_editor")
+        device.wait(Until.hasObject(By.res(PACKAGE, "key_mode")), 12000)
+        device.waitForIdle(1000)
         objectById("key_mode")
         if (objectById("key_mode").text == "VIỆT") tap("key_mode")
     }

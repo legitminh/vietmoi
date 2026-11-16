@@ -108,7 +108,7 @@ phone's keyboard preferences.
 
 The project has no package dependencies. `scripts/generate-ios-project.py`
 recreates its checked-in project and shared scheme when source membership changes.
-`scripts/make-ios-icon.swift` reproduces the app icon with Core Graphics/Core Text.
+`scripts/make-icons.swift` reproduces the app icon with Core Graphics/Core Text.
 
 References: [custom keyboards](https://developer.apple.com/documentation/uikit/creating-a-custom-keyboard),
 [text interactions](https://developer.apple.com/documentation/uikit/handling-text-interactions-in-custom-keyboards),
