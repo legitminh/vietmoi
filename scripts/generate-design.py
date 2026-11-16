@@ -10,20 +10,20 @@ import re
 from xml.sax.saxutils import escape
 
 ROOT = Path(__file__).resolve().parents[1]
-brand = json.loads((ROOT / 'Design/brand.json').read_text())
+brand = json.loads((ROOT / 'Design/brand.json').read_text(encoding='utf-8'))
 check = argparse.ArgumentParser()
 check.add_argument('--check', action='store_true')
 args = check.parse_args()
 stale = []
 def write(path, value):
     target = ROOT / path
-    if target.exists() and target.read_text() == value: return
+    if target.exists() and target.read_text(encoding='utf-8') == value: return
     if args.check: stale.append(path)
     else:
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(value)
+        target.write_text(value, encoding='utf-8')
 def update(path, transform):
-    write(path, transform((ROOT / path).read_text()))
+    write(path, transform((ROOT / path).read_text(encoding='utf-8')))
 def quoted(value): return json.dumps(value, ensure_ascii=False)
 # Stable Keyflow byte-slot hues. Persist the values in generated tables so all
 # hosts agree without porting the JS library or duplicating its implementation.
@@ -97,7 +97,7 @@ for path in ['Resources/Info.plist']:
     update(path,lambda s:re.sub(r'(<key>CFBundleVersion</key>\s*<string>).*?(</string>)',lambda m:m[1]+str(brand['build'])+m[2],s))
 write('Design/version.properties',f"version={brand['version']}\nbuild={brand['build']}\n")
 # Shared bilingual interface content; Vietnamese is the explicit default.
-content = json.loads((ROOT / 'Design/content.json').read_text())
+content = json.loads((ROOT / 'Design/content.json').read_text(encoding='utf-8'))
 for key, value in content.items():
     if set(value) != {'vi','en'}: raise SystemExit(f'Missing translation: {key}')
     if set(re.findall(r'\{(\w+)\}', value['vi'])) != set(re.findall(r'\{(\w+)\}', value['en'])):
