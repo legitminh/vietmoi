@@ -66,8 +66,11 @@ def main():
             f"Depends: {', '.join(sorted(dependencies))}\nRecommends: ibus | fcitx5\n"
             "Homepage: https://github.com/legitminh/vietmoi\n"
             f"Description: Bộ gõ siêu việt cho Ubuntu {ubuntu}\n"
-            " Shared Swift engine, IBus and Fcitx 5 adapters, and native settings.\n"
-            " Select the keyboard in your input framework after installation.\n")
+            " Bộ xử lý Swift dùng chung, bộ gõ IBus/Fcitx 5 và ứng dụng cài đặt.\n"
+            " Sau khi cài, chọn siêu việt trong hệ nhập đang dùng.\n"
+            " .\n"
+            " English: Vietnamese keyboard with a shared Swift engine, IBus/Fcitx 5\n"
+            " adapters and native settings. Select the keyboard after installation.\n")
         document = tree / "usr/share/doc/sieuviet"
         document.mkdir(parents=True)
         subprocess.run([sys.executable, str(ROOT / "scripts/copy-guides.py"), str(document), "README", "README.en.md"], check=True)
