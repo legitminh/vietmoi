@@ -132,7 +132,7 @@ class KeyboardView(context: Context, private val session: () -> EditorSession?,
                     view.isEnabled = key.getBoolean("enabled")
                     view.alpha = if (view.isEnabled) 1f else 0.3f
                     view.contentDescription = if (key.getString("id") == "mode") AppCopy.text(if (ascii) "switchVietnamese" else "switchAscii")
-                                              else "${key.getString("position")}: ${if (view.isEnabled) title else AppCopy.text("unavailable")}"
+                                              else "${key.getString("position")}: ${if (view.isEnabled) view.text else AppCopy.text("unavailable")}"
                 }
             }
         }

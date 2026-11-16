@@ -6,7 +6,7 @@ Bàn phím tiếng Việt cho **macOS, iOS, Android, Windows và Ubuntu**. Ghép
 
 [Tải bản dùng thử](https://github.com/legitminh/vietmoi/releases) · [Cài đặt theo hệ điều hành](RELEASING.md) · [iPhone/iPad](iOS/README.md) · [Android](Android/README.md) · [Windows/Ubuntu](Desktop/README.md)
 
-Phiên bản **0.12.1, bản dựng 38**. Đọc hướng dẫn phát hành trước khi cài: macOS được ký tạm thời, iOS phải ký lại, APK dùng chữ ký phát triển, Windows chưa được thẩm định gõ TSF tương tác trong ứng dụng thực tế.
+Phiên bản **0.12.2, bản dựng 39**. Đọc hướng dẫn phát hành trước khi cài: macOS được ký tạm thời, iOS phải ký lại, APK dùng chữ ký phát triển, Windows chưa được thẩm định gõ TSF tương tác trong ứng dụng thực tế.
 
 ## Cách gõ
 

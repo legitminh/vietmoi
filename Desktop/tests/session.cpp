@@ -67,6 +67,12 @@ int main(int argc, char **argv) {
           check(doc.text == "fở ", "pending word keeps original output");
           check(session.configure({0,1}), "idle settings refresh"); type(session,"frej");
           check(doc.text == "fở phở ", "new word uses refreshed output"); }
+        { Document doc; sv::Session session(core, doc, {1,0,"vi"});
+          check(session.guide().find(": Xóa") != std::string::npos, "Vietnamese grid control label");
+          check(session.configure({1,0,"en"}) && session.settings().input == 1 && session.settings().output == 0, "language keeps layout and spelling");
+          check(session.guide().find(": Clear") != std::string::npos, "English grid control label");
+          session.command(SV_TOGGLE_ASCII);
+          check(session.configure({1,0,"vi"}) && session.ascii() && session.guide().find("Nhấn riêng") != std::string::npos, "language keeps ASCII mode and localizes guide help"); }
         std::cout << "Passed " << checks << " desktop policy checks against the actual Swift library.\n";
         return 0;
     } catch (const std::exception &error) { std::cerr << error.what() << '\n'; return 1; }

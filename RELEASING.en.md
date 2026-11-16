@@ -1,6 +1,6 @@
 [Tiếng Việt](RELEASING.md) · **English**
 
-# siêu việt 0.12.1 (build 38)
+# siêu việt 0.12.2 (build 39)
 
 Development builds for macOS, iOS, Android, Windows and Ubuntu. Shared linguistic
 sources are in `Sources/Core`; native hosts and keyboard adapters use that engine.
@@ -62,6 +62,6 @@ qualification remains separate from successful compilation and engine checks.
 Commit the local source to `legitminh/vietmoi`, run the Windows workflow for that
 commit, and collect both verified native packages alongside the local builds in
 `build/releases`. Include this installation guide, third-party notices and
-`SHA256SUMS`. Publish version `v0.12.1` as a prerelease while these signing and
+`SHA256SUMS`. Publish version `v0.12.2` as a prerelease while these signing and
 qualification limits apply. Never publish development signing keys, provisioning
 profiles, SDKs, build caches, emulator data, or personal settings.

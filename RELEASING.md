@@ -1,6 +1,6 @@
 **Tiếng Việt** · [English](RELEASING.en.md)
 
-# siêu việt 0.12.1 · bản dựng 38
+# siêu việt 0.12.2 · bản dựng 39
 
 Bản dùng thử dành cho macOS, iOS, Android, Windows và Ubuntu. Giao diện và tài liệu mặc định bằng tiếng Việt. Trong ứng dụng, mở **Cài đặt → Ngôn ngữ giao diện → English** để chuyển sang tiếng Anh. Lựa chọn được lưu và không đổi bố cục phím hay cách viết.
 

@@ -7,7 +7,7 @@ Download development builds for macOS, iOS, Android, Windows and Ubuntu from
 See [installation and build instructions](RELEASING.md) for architecture,
 signing and qualification details; the iOS IPA requires re-signing.
 
-The display name is **siêu việt** on macOS, iOS, Android, Windows, and Linux. Version 0.12.1
+The display name is **siêu việt** on macOS, iOS, Android, Windows, and Linux. Version 0.12.2
 uses a five-point star for the app icon and the macOS input menu. Bundle IDs,
 serialized output values, and the Mac `VietMoi.app` path remain stable for updates.
 The launcher is `~/Applications/siêu việt.app`.

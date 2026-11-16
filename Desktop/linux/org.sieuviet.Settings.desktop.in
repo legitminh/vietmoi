@@ -1,7 +1,8 @@
 [Desktop Entry]
 Type=Application
 Name=@SIEUVIET_NAME@
-Comment=Configure the shared Sieuviet keyboard
+Comment=@SIEUVIET_SETTINGS_VI@
+Comment[en]=@SIEUVIET_SETTINGS_EN@
 Exec=@CMAKE_INSTALL_FULL_BINDIR@/sieuviet-settings
 Icon=sieuviet
 Terminal=false

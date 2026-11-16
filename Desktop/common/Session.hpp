@@ -1,5 +1,6 @@
 #pragma once
 #include "Core.hpp"
+#include "Design.hpp"
 #include <memory>
 #include <set>
 
@@ -48,7 +49,14 @@ public:
     bool pending() const { return core_.phase(engine_) > 0; }
     bool ascii() const { return core_.ascii(engine_) == 1; }
     std::string preview() const { return Core::read(core_.copyPreview, engine_); }
-    std::string guide() const { return Core::read(core_.copyGuide, engine_, settings_.input); }
+    std::string guide() const {
+        if (ascii()) return "ASCII · " + design::text("shiftLimitHelp", settings_.language);
+        auto result = Core::read(core_.copyGuide, engine_, settings_.input);
+        // Keep ABI control tokens stable and localize native presentation.
+        if (auto position = result.find(": Clear"); position != std::string::npos)
+            result.replace(position, 7, ": " + design::text("clear", settings_.language));
+        return result;
+    }
     Settings settings() const { return settings_; }
     bool configure(const Settings &settings) {
         if (pending()) return false;

@@ -124,6 +124,7 @@ class KeyboardTests {
             device.waitForIdle(1000)
         }
         expectText("má ")
+        assertTrue(objectById("key_clear").contentDescription.endsWith(": Xóa"))
         tap("key_clear"); expectText("")
     }
 

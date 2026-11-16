@@ -70,8 +70,8 @@ python3 scripts/build-linux.py --prefix /usr --destdir build/linux-system-root
 ```
 
 Development archives from this verification run are at
-`build/linux-desktop/sieuviet-linux-arm64-0.12.1-dev.tar.gz` and
-`build/linux-desktop-x64/sieuviet-linux-x64-0.12.1-dev.tar.gz`. They contain the
+`build/linux-desktop/sieuviet-linux-arm64-0.12.2-dev.tar.gz` and
+`build/linux-desktop-x64/sieuviet-linux-x64-0.12.2-dev.tar.gz`. They contain the
 system-prefix tree for the tested Ubuntu 26.04 environment, not a universal
 Linux installer. The GitHub prerelease now also provides Ubuntu 26.04 `.deb`
 packages for both architectures, with bundled Swift runtimes and dependency

@@ -22,7 +22,7 @@ Gỡ đăng ký bằng `./install.ps1 -Uninstall`. Đóng ứng dụng đang dù
 Chọn `.deb` **amd64** hoặc **arm64** đúng máy. Ví dụ:
 
 ```sh
-sudo apt install ./sieuviet-0.12.1-ubuntu-26.04-amd64.deb
+sudo apt install ./sieuviet-0.12.2-ubuntu-26.04-amd64.deb
 ```
 
 Nếu dùng ARM64, thay tên bằng tệp `arm64` đã tải. `apt` cài các gói phụ thuộc; thư viện Swift đã nằm trong gói. Gói được tạo cho Ubuntu 26.04, không phải bộ cài Linux phổ dụng.

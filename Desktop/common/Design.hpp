@@ -4,7 +4,7 @@
 #include <string_view>
 namespace sv::design {
 inline constexpr const char *name = "siêu việt";
-inline constexpr const char *version = "0.12.1";
+inline constexpr const char *version = "0.12.2";
 struct Copy { std::string_view key; const char *vi; const char *en; };
 inline constexpr Copy copy[] = {
     {"tagline", "Tiếng Việt, từng lựa chọn một.", "Vietnamese, one choice at a time."},

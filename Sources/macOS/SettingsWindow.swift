@@ -23,14 +23,14 @@ final class ProfileCard: ThemedSurface {
         use.bezelStyle = .rounded
         use.isEnabled = store.active.id != profile.id
         use.frame = NSRect(x: 426, y: 103, width: 88, height: 30)
-        use.setAccessibilityLabel(AppCopy.text("selectProfile", ["name": profile.name]))
+        use.setAccessibilityLabel(AppCopy.text("selectProfile", ["name": profile.name == "Default keyboard" ? AppCopy.text("defaultKeyboard") : profile.name]))
         addSubview(use)
         let remove = NSButton(image: NSImage(systemSymbolName: "minus.circle", accessibilityDescription: AppCopy.text("removeKeyboard"))!, target: self, action: #selector(removeProfile))
         remove.isBordered = false
         remove.frame = NSRect(x: 564, y: 105, width: 30, height: 28)
         remove.isEnabled = store.profiles.count > 1
-        remove.toolTip = remove.isEnabled ? AppCopy.text("removeProfile", ["name": profile.name]) : AppCopy.text("keepKeyboard")
-        remove.setAccessibilityLabel(AppCopy.text("removeProfile", ["name": profile.name]))
+        remove.toolTip = remove.isEnabled ? AppCopy.text("removeProfile", ["name": profile.name == "Default keyboard" ? AppCopy.text("defaultKeyboard") : profile.name]) : AppCopy.text("keepKeyboard")
+        remove.setAccessibilityLabel(AppCopy.text("removeProfile", ["name": profile.name == "Default keyboard" ? AppCopy.text("defaultKeyboard") : profile.name]))
         addSubview(remove)
 
         for (text, x) in [(AppCopy.text("inputLabel"), 18), (AppCopy.text("outputLabel"), 320)] {
@@ -45,20 +45,20 @@ final class ProfileCard: ThemedSurface {
         input.selectItem(withTitle: profile.inputType.rawValue)
         input.target = self
         input.action = #selector(changeInput)
-        input.setAccessibilityLabel(AppCopy.text("inputProfile", ["name": profile.name]))
+        input.setAccessibilityLabel(AppCopy.text("inputProfile", ["name": profile.name == "Default keyboard" ? AppCopy.text("defaultKeyboard") : profile.name]))
         addSubview(input)
         output.frame = NSRect(x: 316, y: 38, width: 286, height: 30)
         output.addItems(withTitles: OutputType.allCases.map(\.displayName))
         output.selectItem(at: OutputType.allCases.firstIndex(of: profile.outputType)!)
         output.target = self
         output.action = #selector(changeOutput)
-        output.setAccessibilityLabel(AppCopy.text("outputProfile", ["name": profile.name]))
+        output.setAccessibilityLabel(AppCopy.text("outputProfile", ["name": profile.name == "Default keyboard" ? AppCopy.text("defaultKeyboard") : profile.name]))
         addSubview(output)
         visibility.frame = NSRect(x: 18, y: 9, width: 270, height: 22)
         visibility.state = profile.showVirtualKeyboard ? .on : .off
         visibility.target = self
         visibility.action = #selector(changeVisibility)
-        visibility.setAccessibilityLabel(AppCopy.text("showProfile", ["name": profile.name]))
+        visibility.setAccessibilityLabel(AppCopy.text("showProfile", ["name": profile.name == "Default keyboard" ? AppCopy.text("defaultKeyboard") : profile.name]))
         visibility.toolTip = AppCopy.text("hideKeyboardHelp")
         addSubview(visibility)
 
