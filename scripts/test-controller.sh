@@ -4,12 +4,8 @@ PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 mkdir -p "$PROJECT_ROOT/build/module-cache"
 xcrun swiftc -swift-version 5 -module-cache-path "$PROJECT_ROOT/build/module-cache" \
   -framework AppKit -framework InputMethodKit -framework Carbon \
-  "$PROJECT_ROOT/Sources/Core/KeyboardEngine.swift" \
-  "$PROJECT_ROOT/Sources/Core/StandardVietnamese.swift" \
-  "$PROJECT_ROOT/Sources/Core/KeyboardProfiles.swift" \
-  "$PROJECT_ROOT/Sources/Core/KeyboardPreferences.swift" \
-  "$PROJECT_ROOT/Sources/Core/ASCIIKeyboardLayout.swift" \
-  "$PROJECT_ROOT/Sources/Core/ASCIIPlusMapping.swift" \
+  "$PROJECT_ROOT"/Sources/Core/*.swift \
+  "$PROJECT_ROOT"/Sources/Presentation/*.swift \
   "$PROJECT_ROOT/Sources/macOS/KeyboardPanel.swift" \
   "$PROJECT_ROOT/Sources/macOS/ASCIIKeyboardView.swift" \
   "$PROJECT_ROOT/Sources/macOS/SettingsWindow.swift" \

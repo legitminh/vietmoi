@@ -1,8 +1,8 @@
 import Foundation
 
 enum Phase: Int, CaseIterable {
-    case initial, medialTone, nucleus, final
-    var title: String { ["Initial", "Medial + tone", "Nucleus", "Final"][rawValue] }
+    case initial, onglideCoreVowel, final, tone
+    var title: String { ["Initial", "Onglide + core vowel", "Final", "Tone"][rawValue] }
 }
 
 struct GridKey {
@@ -24,97 +24,108 @@ enum EngineEffect: Equatable {
 
 struct KeyboardEngine {
     let outputType: OutputType
-    init(outputType: OutputType = .vietmoi, ascii: Bool = false) {
+    let inventory: VietnamesePhoneticInventory
+    init(outputType: OutputType = .sieuviet, ascii: Bool = false,
+         inventory: VietnamesePhoneticInventory = .sieuviet) {
         self.outputType = outputType
         self.ascii = ascii
+        self.inventory = inventory
     }
-    // Keep the specification's ordering. Extra nuclei are appended so existing mappings stay stable.
-    static let initials = ["b","c","ch","d","đ","g","gi","h","k","kh","l","m","n","ng","nh","p","ph","qu","r","s","t","th","tr","v","x",""]
-    static let nuclei = ["a","ă","â","e","ê","i","ô","ơ","ư","ưa","ươ","ia","iê","o","u","ua","uô"]
-    static let finals = ["","c","ch","i","m","n","ng","nh","o","p","t","u"]
-    // Vietmoi tones are spacing suffixes; hỏi must not combine with the final letter.
-    static let tones = [" ","´","`","?","~","."]
-    static let toneLabels = ["—"] + Array(tones.dropFirst())
-    static let toneNames = ["ngang","sắc","huyền","hỏi","ngã","nặng"]
+    static let initials = VietnamesePhoneticInventory.sieuviet.initials
+    static let coreVowels = VietnamesePhoneticInventory.sieuviet.coreVowels
+    static let finals = VietnamesePhoneticInventory.sieuviet.finals
     private(set) var components: [Int] = []
     private(set) var ascii: Bool
+    // Retain the completed basis in memory. Never log users' typing to disk.
+    private(set) var lastCommittedBasis: VietnamesePhoneticBasis?
     var phase: Phase { Phase(rawValue: components.count)! }
     var isPending: Bool { !components.isEmpty }
+    // While phase == .tone, ngang is a neutral preview, not a chosen tone.
+    var phoneticBasis: VietnamesePhoneticBasis? {
+        guard components.count >= 2 else { return nil }
+        return basis()
+    }
+    private func basis(tone: VietnameseTone = .ngang) -> VietnamesePhoneticBasis {
+        let vowel = inventory.vowelAtoms[components[1]]
+        return VietnamesePhoneticBasis(initial: inventory.initials[components[0]],
+                                       onglide: vowel.onglide, coreVowel: vowel.coreVowel,
+                                       tone: tone,
+                                       final: components.count > 2 ? inventory.finals[components[2]] : "")
+    }
     var preview: String {
         guard let first = components.first else { return "" }
-        if outputType == .vietstandard, components.count == 3 {
-            return standard(final: nil)
+        if let basis = phoneticBasis {
+            return basis.sieuviet(inventory: inventory)
         }
-        var text = Self.initials[first]
-        if components.count > 1 { text += ["","u","o"][components[1] / 6] }
-        if components.count > 2 { text += Self.nuclei[components[2]] }
-        return text
+        return inventory.initials[first]
     }
     var tonePreview: String {
-        components.count > 1 ? Self.toneNames[components[1] % 6] : "Choose a tone next"
+        switch phase {
+        case .initial: return "Choose an initial"
+        case .onglideCoreVowel: return "Choose onglide + core vowel"
+        case .tone: return "Choose a tone next"
+        case .final: return "Choose a final"
+        }
     }
     func action(at gridIndex: Int) -> String? {
+        guard GridKey.all.indices.contains(gridIndex) else { return nil }
         if gridIndex == 24 { return ascii ? "Viet mode" : "ASCII" }
         if ascii { return GridKey.all[gridIndex].label }
         if gridIndex == 31 { return "Clear" }
-        guard let slot = GridKey.actionSlots.firstIndex(of: gridIndex) else { return nil }
-        switch phase {
-        case .initial: return slot < Self.initials.count ? display(Self.initials[slot]) : nil
-        case .medialTone:
-            // Three physical rows, one medial per row; six tones occupy the first six columns.
-            let row = gridIndex / 8, col = gridIndex % 8
-            guard row < 3, col < 6 else { return nil }
-            return "\(["∅","u","o"][row]) · \(Self.toneLabels[col])"
-        case .nucleus: return slot < Self.nuclei.count ? Self.nuclei[slot] : nil
-        case .final: return slot < Self.finals.count ? display(Self.finals[slot]) : nil
-        }
+        return GridKey.actionSlots.firstIndex(of: gridIndex).flatMap { componentLabel($0) }
     }
     private func display(_ value: String) -> String { value.isEmpty ? "∅" : value }
-    private func standard(final: String?) -> String {
-        StandardVietnamese.render(initial: Self.initials[components[0]],
-                                  medial: ["", "u", "o"][components[1] / 6],
-                                  nucleus: Self.nuclei[components[2]],
-                                  final: final, tone: components[1] % 6)
-    }
     mutating func press(_ gridIndex: Int) -> EngineEffect {
         guard GridKey.all.indices.contains(gridIndex) else { return .none }
         if gridIndex == 24 {
-            let pending = isPending
-            components.removeAll()
-            ascii.toggle()
-            return pending ? .cancel : .none
+            return toggleASCII()
         }
         guard !ascii else { return .none }
-        if gridIndex == 31 {
-            return clearCycle()
-        }
-        guard action(at: gridIndex) != nil,
-              let slot = GridKey.actionSlots.firstIndex(of: gridIndex) else { return .none }
-        return selectComponent(phase == .medialTone ? (gridIndex / 8) * 6 + gridIndex % 8 : slot)
+        if gridIndex == 31 { return clearCycle() }
+        let slots = GridKey.actionSlots
+        guard let index = slots.firstIndex(of: gridIndex) else { return .none }
+        return selectComponent(index)
+    }
+    mutating func toggleASCII() -> EngineEffect {
+        let effect = finishPartial()
+        ascii.toggle()
+        return effect
     }
     func componentLabel(_ index: Int) -> String? {
         guard index >= 0 else { return nil }
         switch phase {
-        case .initial: return index < Self.initials.count ? display(Self.initials[index]) : nil
-        case .medialTone:
-            guard index < 18 else { return nil }
-            return "\(["∅","u","o"][index / 6])·\(Self.toneLabels[index % 6])"
-        case .nucleus: return index < Self.nuclei.count ? Self.nuclei[index] : nil
-        case .final: return index < Self.finals.count ? display(Self.finals[index]) : nil
+        case .initial: return index < inventory.initials.count ? display(inventory.initials[index]) : nil
+        case .onglideCoreVowel: return index < inventory.vowelAtoms.count ? inventory.vowelAtoms[index].label : nil
+        case .tone: return VietnameseTone(rawValue: index)?.name
+        case .final: return index < inventory.finals.count ? display(inventory.finals[index]) : nil
         }
     }
     mutating func selectComponent(_ index: Int) -> EngineEffect {
         guard !ascii, componentLabel(index) != nil else { return .none }
-        if phase == .final {
-            let text = outputType == .vietstandard
-                ? standard(final: Self.finals[index]) + " "
-                : preview + Self.finals[index] + Self.tones[components[1] % 6]
+        if phase == .tone {
+            let completed = basis(tone: VietnameseTone(rawValue: index)!)
+            let text = (outputType == .quocNgu ? completed.standard() : completed.sieuviet(inventory: inventory)) + " "
             components.removeAll()
+            guard CompositionText.isSafe(text) else { return .cancel }
+            lastCommittedBasis = completed
             return .commit(text)
         }
         components.append(index)
+        guard CompositionText.isSafe(preview) else { components.removeAll(); return .cancel }
         return .marked(preview)
     }
+    // End the modal flow without inventing a missing vowel/final/tone. Partial
+    // text is a literal abbreviation, so it has no completed phonetic basis.
+    mutating func finishPartial(suffix: String = "") -> EngineEffect {
+        guard isPending else { return .none }
+        let text = preview
+        components.removeAll()
+        lastCommittedBasis = nil
+        guard !text.isEmpty else { return .cancel }
+        let committed = (text + suffix).precomposedStringWithCanonicalMapping
+        return CompositionText.isSafe(committed) ? .commit(committed) : .cancel
+    }
+
     mutating func clearCycle() -> EngineEffect {
         if isPending { components.removeAll(); return .cancel }
         return .deleteCycle
@@ -134,6 +145,7 @@ struct KeyboardEngine {
 struct CommittedCycle {
     let text: String
     let range: NSRange
+    var basis: VietnamesePhoneticBasis? = nil
     func canDelete(selection: NSRange, actualText: String?) -> Bool {
         selection.length == 0 && selection.location != NSNotFound &&
         selection.location == NSMaxRange(range) && actualText == text

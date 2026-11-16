@@ -1,5 +1,6 @@
 import AppKit
 import InputMethodKit
+import os
 
 // InputMethodKit may create a controller for each text client. Literal ASCII is
 // an input-method mode, not document state, so share it across those clients.
@@ -22,6 +23,12 @@ final class VietMoiInputController: IMKInputController {
     override func commitComposition(_ sender: Any!) { session.commitComposition(sender) }
     override func hidePalettes() { session.hidePalettes() }
     override func handle(_ event: NSEvent!, client sender: Any!) -> Bool { session.handle(event, client: sender) }
+    override func didCommand(by selector: Selector!, client sender: Any!) -> Bool {
+        guard let selector = selector else { return false }
+        return session.command(selector, client: sender)
+    }
+    override func composedString(_ sender: Any!) -> Any! { session.compositionText }
+    override func originalString(_ sender: Any!) -> NSAttributedString! { session.originalText }
     override func mouseDown(onCharacterIndex index: Int, coordinate point: NSPoint,
                             withModifier flags: Int, continueTracking keepTracking: UnsafeMutablePointer<ObjCBool>!,
                             client sender: Any!) -> Bool {
@@ -41,7 +48,9 @@ final class InputSession {
     private var currentProfile: KeyboardProfile?
     init(showGuide: Bool = true, profileProvider: @escaping () -> KeyboardProfile = { KeyboardProfiles.shared.active },
          shiftTapThreshold: @escaping () -> TimeInterval = { KeyboardPreferences.shared.shiftTapSeconds },
-         keyIsDown: @escaping (UInt16) -> Bool = { CGEventSource.keyState(.combinedSessionState, key: $0) },
+         // The combined table includes synthetic/TSM events: selection deletion can
+         // leave Delete logically down there long after the hardware released it.
+         keyIsDown: @escaping (UInt16) -> Bool = { CGEventSource.keyState(.hidSystemState, key: $0) },
          asciiMode: @escaping () -> Bool = { ProcessInputMode.ascii },
          setASCIIMode: @escaping (Bool) -> Void = { ProcessInputMode.ascii = $0 }) {
         self.showGuide = showGuide
@@ -53,9 +62,12 @@ final class InputSession {
     }
     private var engine = KeyboardEngine()
     private var history: [CommittedCycle] = []
+    private var keymap: ASCIIPlusKeymap { currentProfile?.asciiPlusKeymap ?? .sieuviet }
     private var origin: NSRange?
     private var expectedSelection: NSRange?
     private var originalSelection: String = ""
+    var compositionText: String { engine.preview }
+    var originalText: NSAttributedString { NSAttributedString(string: originalSelection) }
     private var marked = false
     private var leftShiftDown = false
     private var rightShiftDown = false
@@ -69,19 +81,22 @@ final class InputSession {
     }
 
     func activateServer(_ sender: Any!) {
+        traceShift("activate", sender: sender)
         currentProfile = profileProvider()
         engine = KeyboardEngine(outputType: currentProfile!.outputType, ascii: asciiMode())
         history.removeAll()
         origin = nil
         expectedSelection = nil
+        originalSelection = ""
         marked = false
         resetShiftTracking()
         refresh(sender)
     }
 
     func deactivateServer(_ sender: Any!) {
+        traceShift("deactivate", sender: sender)
         resetShiftTracking()
-        apply(engine.cancel(), sender: sender)
+        apply(engine.finishPartial(), sender: sender)
         history.removeAll()
         if showGuide { KeyboardPanel.shared.hide() }
     }
@@ -89,17 +104,18 @@ final class InputSession {
     func hidePalettes() { if showGuide { KeyboardPanel.shared.hide() } }
 
     func commitComposition(_ sender: Any!) {
+        traceShift("commit", sender: sender)
         // A host may request a composition flush between modifier events even
         // when nothing is being composed. Actual deactivation resets Shift tracking.
-        // Incomplete four-key cycles are cancelled on focus/caret changes, never emitted as words.
-        apply(engine.cancel(), sender: sender)
+        // A host-requested flush preserves abbreviations, without adding a space.
+        apply(engine.finishPartial(), sender: sender)
     }
 
     func mouseDown(onCharacterIndex index: Int, coordinate point: NSPoint,
                             withModifier flags: Int, continueTracking keepTracking: UnsafeMutablePointer<ObjCBool>!,
                             client sender: Any!) -> Bool {
         shiftTap.interrupt()
-        apply(engine.cancel(), sender: sender)
+        apply(engine.finishPartial(), sender: sender)
         history.removeAll()
         return false
     }
@@ -107,10 +123,15 @@ final class InputSession {
     func handle(_ event: NSEvent!, client sender: Any!) -> Bool {
         guard let event = event, let client = sender as? IMKTextInput else { return false }
         if let ownID = Bundle.main.bundleIdentifier, client.bundleIdentifier() == ownID { return false }
+        if event.type == .flagsChanged || event.type == .leftMouseDown ||
+           ([51,117,123,124,125,126].contains(event.keyCode) && (event.type == .keyDown || event.type == .keyUp)) {
+            traceShift("event", event: event, sender: sender)
+        }
         syncProfile(sender)
+        reconcileShiftState(event)
         if event.type == .leftMouseDown {
             shiftTap.interrupt()
-            apply(engine.cancel(), sender: sender)
+            apply(engine.finishPartial(), sender: sender)
             history.removeAll()
             return false
         }
@@ -120,15 +141,6 @@ final class InputSession {
         }
         if event.type == .keyDown { shiftTap.keyDown(event.keyCode) }
         if !marked && !engine.isPending { invalidateHistoryIfMoved(client) }
-        if marked && compositionMoved(client) {
-            shiftTap.interrupt()
-            _ = engine.cancel()
-            marked = false
-            origin = nil
-            expectedSelection = nil
-            originalSelection = ""
-            history.removeAll()
-        }
         let shortcuts = event.modifierFlags.intersection([.command, .control, .option])
         if event.type == .flagsChanged {
             handleModifiers(event, sender: sender)
@@ -136,19 +148,33 @@ final class InputSession {
             return false
         }
         guard event.type == .keyDown else { return false }
-        let shiftHeld = event.modifierFlags.contains(.shift) || leftShiftDown || rightShiftDown
-        if [51, 117].contains(event.keyCode) && shiftHeld && shortcuts.isEmpty {
-            apply(engine.cancel(), sender: sender)
-            history.removeAll()
-            let handled = deletePreviousCycle(client)
-            refresh(sender)
-            return handled
-        }
-        if !shortcuts.isEmpty || shiftHeld {
+        discardMovedComposition(client)
+        let shiftHeld = event.modifierFlags.contains(.shift) || leftShiftDown || rightShiftDown ||
+                        keyIsDown(56) || keyIsDown(60)
+        if [51, 117].contains(event.keyCode) && client.selectedRange().length > 0 &&
+           !ownsCompositionSelection(client) && shortcuts.isEmpty {
+            // An explicit selection belongs to the host, including forward Delete
+            // in ASCII+. Cycle clearing must never swallow selected-text deletion.
             apply(engine.cancel(), sender: sender)
             history.removeAll()
             refresh(sender)
             return false
+        }
+        if [51, 117].contains(event.keyCode) && shiftHeld && shortcuts.isEmpty {
+            apply(engine.cancel(), sender: sender)
+            let handled = deletePreviousCycle(client)
+            history.removeAll()
+            refresh(sender)
+            return handled
+        }
+        if !shortcuts.isEmpty || shiftHeld {
+            apply(engine.finishPartial(), sender: sender)
+            history.removeAll()
+            refresh(sender)
+            return false
+        }
+        if event.keyCode == 49 && !engine.ascii && engine.isPending {
+            return finishWithSpace(sender)
         }
         if event.keyCode == 53 {
             let pending = engine.isPending
@@ -171,10 +197,16 @@ final class InputSession {
             return true
         }
         if [36,48,76,117,123,124,125,126,115,119,116,121].contains(event.keyCode) {
-            apply(engine.cancel(), sender: sender)
+            apply(engine.finishPartial(), sender: sender)
             history.removeAll()
             refresh(sender)
             return false
+        }
+        // Command keycodes above retain native command handling. A malformed or
+        // remapped non-command event must never fall through as literal C0/C1 text.
+        if let text = event.characters, text.unicodeScalars.contains(where: { CharacterSet.controlCharacters.contains($0) }) {
+            passThrough(sender)
+            return true
         }
         if engine.ascii {
             guard let text = event.characters,
@@ -185,7 +217,7 @@ final class InputSession {
         }
         let asciiPlusMode = currentProfile?.inputType == .asciiPlus
         if asciiPlusMode {
-            guard ASCIIPlusMapping.inputKeyCodes.contains(event.keyCode) else {
+            guard ASCIIPlusMapping.inputKeyCodes(for: engine.phase, inventory: engine.inventory, keymap: keymap).contains(event.keyCode) else {
                 passThrough(sender)
                 return false
             }
@@ -197,7 +229,7 @@ final class InputSession {
         let wasPending = engine.isPending
         let effect: EngineEffect
         if asciiPlusMode {
-            guard let value = ASCIIPlusMapping.bindings(for: engine.phase)[event.keyCode] else {
+            guard let value = ASCIIPlusMapping.bindings(for: engine.phase, inventory: engine.inventory, keymap: keymap)[event.keyCode] else {
                 refresh(sender, message: "Choose a highlighted key, or tap Shift for literal ASCII")
                 return true
             }
@@ -216,10 +248,83 @@ final class InputSession {
         return true
     }
 
+    private func finishWithSpace(_ sender: Any!) -> Bool {
+        guard engine.isPending else { return false }
+        let hasText = !engine.preview.isEmpty
+        apply(engine.finishPartial(suffix: " "), sender: sender)
+        refresh(sender)
+        // Empty optional initials leave ordinary Space/selection behavior to the host.
+        return hasText
+    }
+
+    // Some hosts deliver responder commands instead of raw editing key events.
+    // Own Backspace while composing so it always undoes the current round.
+    private enum EditingCommand: String {
+        case backward = "deleteBackward:", decomposingBackward = "deleteBackwardByDecomposingPreviousCharacter:"
+        case space = "insertSpace:", cancel = "cancelOperation:"
+        case newline = "insertNewline:", lineBreak = "insertLineBreak:", tab = "insertTab:", backtab = "insertBacktab:"
+        case left = "moveLeft:", right = "moveRight:", up = "moveUp:", down = "moveDown:"
+        case selectLeft = "moveLeftAndModifySelection:", selectRight = "moveRightAndModifySelection:"
+        case selectUp = "moveUpAndModifySelection:", selectDown = "moveDownAndModifySelection:"
+    }
+
+    func command(_ selector: Selector, client sender: Any!) -> Bool {
+        guard let client = sender as? IMKTextInput,
+              let command = EditingCommand(rawValue: NSStringFromSelector(selector)) else { return false }
+        if let ownID = Bundle.main.bundleIdentifier, client.bundleIdentifier() == ownID { return false }
+        syncProfile(sender)
+        discardMovedComposition(client)
+        switch command {
+        case .backward, .decomposingBackward:
+            shiftTap.interrupt()
+            if marked && compositionMoved(client) { return false }
+            if client.selectedRange().location != NSNotFound && client.selectedRange().length > 0 && !ownsCompositionSelection(client) { return false }
+            if keyIsDown(56) || keyIsDown(60) {
+                apply(engine.cancel(), sender: sender)
+                let handled = deletePreviousCycle(client)
+                history.removeAll()
+                refresh(sender)
+                return handled
+            }
+            guard engine.isPending else { return false }
+            apply(engine.backspace(), sender: sender)
+            refresh(sender)
+            return true
+        case .space:
+            shiftTap.interrupt()
+            return finishWithSpace(sender)
+        case .newline, .lineBreak, .tab, .backtab, .left, .right, .up, .down,
+             .selectLeft, .selectRight, .selectUp, .selectDown:
+            shiftTap.interrupt()
+            apply(engine.finishPartial(), sender: sender)
+            refresh(sender)
+            return false
+        case .cancel:
+            shiftTap.interrupt()
+            let pending = engine.isPending
+            apply(engine.cancel(), sender: sender)
+            refresh(sender)
+            return pending
+        }
+    }
+
     private func passThrough(_ sender: Any!) {
-        apply(engine.cancel(), sender: sender)
+        apply(engine.finishPartial(), sender: sender)
         history.removeAll()
         refresh(sender)
+    }
+
+    // Opt-in diagnostics contain only editing/modifier metadata, never text or printable keycodes.
+    private static let shiftLogger = Logger(subsystem: "com.minh.inputmethod.VietMoi", category: "ShiftDiagnostics")
+    private func traceShift(_ reason: String, event: NSEvent? = nil, sender: Any!) {
+        guard UserDefaults.standard.bool(forKey: "shiftDiagnostics") else { return }
+        let type = event.map { Int($0.type.rawValue) } ?? -1
+        let key = event.map { Int($0.keyCode) } ?? -1
+        let flags = event?.modifierFlags.rawValue ?? 0
+        let selectionLength = (sender as? IMKTextInput)?.selectedRange().length ?? 0
+        let logicalDelete = CGEventSource.keyState(.combinedSessionState, key: 51)
+        let hardwareDelete = CGEventSource.keyState(.hidSystemState, key: 51)
+        Self.shiftLogger.notice("logicalDelete=\(logicalDelete) hardwareDelete=\(hardwareDelete) reason=\(reason, privacy: .public) type=\(type) key=\(key) flags=\(flags) cachedL=\(self.leftShiftDown) cachedR=\(self.rightShiftDown) physicalL=\(self.keyIsDown(56)) physicalR=\(self.keyIsDown(60)) ascii=\(self.engine.ascii) marked=\(self.marked) selected=\(selectionLength)")
     }
 
     private func resetShiftTracking() {
@@ -228,32 +333,49 @@ final class InputSession {
         shiftTap.reset()
     }
 
+    private func reconcileShiftState(_ event: NSEvent) {
+        guard event.type == .keyDown || event.type == .keyUp || event.type == .leftMouseDown else { return }
+        // Selection/deletion clients may omit flagsChanged releases. A later
+        // unshifted event plus released physical keys is evidence that cached
+        // modifier state is stale, not that Shift is still being held.
+        if !event.modifierFlags.contains(.shift) && !keyIsDown(56) && !keyIsDown(60) &&
+           (leftShiftDown || rightShiftDown) {
+            resetShiftTracking()
+        }
+    }
+
     private func handleModifiers(_ event: NSEvent, sender: Any!) {
-        // Device-dependent flags from IOLLEvent.h: NX_DEVICELSHIFTKEYMASK (2)
-        // and NX_DEVICERSHIFTKEYMASK (4). Aggregate .shift stays set when one
-        // Shift is released while the other is held.
+        let wasLeftDown = leftShiftDown
+        // Device-dependent flags identify BOTH sides, not just the key named by
+        // this event. Always reconcile the other side too after a missed release.
         let sideFlags = event.modifierFlags.rawValue & 0x6
         let anyShift = event.modifierFlags.contains(.shift)
-        if event.keyCode == 60 {
-            rightShiftDown = sideFlags != 0 ? sideFlags & 0x4 != 0 : anyShift && !rightShiftDown
-            shiftTap.interrupt()
-            return
+        if sideFlags != 0 {
+            leftShiftDown = sideFlags & 0x2 != 0
+            rightShiftDown = sideFlags & 0x4 != 0
+        } else if !anyShift {
+            leftShiftDown = false
+            rightShiftDown = false
+        } else if event.keyCode == 56 {
+            rightShiftDown = keyIsDown(60)
+            leftShiftDown = keyIsDown(56) || !rightShiftDown
+        } else if event.keyCode == 60 {
+            leftShiftDown = keyIsDown(56)
+            rightShiftDown = keyIsDown(60) || !leftShiftDown
         }
-        guard event.keyCode == 56 else { shiftTap.interrupt(); return }
-        let down = sideFlags != 0 ? sideFlags & 0x2 != 0 : anyShift && (!rightShiftDown || !leftShiftDown)
         let otherModifiers = !event.modifierFlags.intersection([.command, .control, .option, .function]).isEmpty
-        if otherModifiers || rightShiftDown { shiftTap.interrupt() }
-        if down && !leftShiftDown {
+        if otherModifiers || rightShiftDown || event.keyCode != 56 { shiftTap.interrupt() }
+        if leftShiftDown && !wasLeftDown {
             shiftTap.press(at: event.timestamp, threshold: shiftTapThreshold(),
-                           isolated: !otherModifiers && !rightShiftDown, isKeyDown: keyIsDown)
-        } else if !down && leftShiftDown {
+                           isolated: event.keyCode == 56 && !otherModifiers && !rightShiftDown, isKeyDown: keyIsDown)
+        } else if !leftShiftDown && wasLeftDown {
             if shiftTap.release(at: event.timestamp) {
-                apply(engine.press(24), sender: sender)
+                let effect = engine.press(24)
                 setASCIIMode(engine.ascii)
+                apply(effect, sender: sender)
                 refresh(sender)
             }
         }
-        leftShiftDown = down
     }
 
     private func beginComposition(_ client: IMKTextInput) {
@@ -273,25 +395,57 @@ final class InputSession {
         currentProfile = profile
     }
 
+    private func discardMovedComposition(_ client: IMKTextInput) {
+        guard marked && compositionMoved(client) else { return }
+        shiftTap.interrupt()
+        _ = engine.cancel()
+        marked = false
+        origin = nil
+        expectedSelection = nil
+        originalSelection = ""
+        history.removeAll()
+    }
+
+    private func ownsCompositionSelection(_ client: IMKTextInput) -> Bool {
+        guard marked, let origin = origin, let expected = expectedSelection,
+              expected.location >= origin.location else { return false }
+        let owned = NSRange(location: origin.location, length: expected.location - origin.location)
+        guard client.markedRange() == owned else { return false }
+        let selection = client.selectedRange()
+        // The host may still report the selection from before setMarkedText.
+        // Accept it only when its live marked range confirms ownership.
+        return selection == origin || (selection.length == 0 && selection.location >= owned.location && selection.location <= NSMaxRange(owned))
+    }
+
     private func compositionMoved(_ client: IMKTextInput) -> Bool {
         // Some clients cache markedRange across IME restarts. Compare our last observed
         // selection instead; unavailable document access is not evidence of movement.
         guard let expected = expectedSelection else { return false }
         let selection = client.selectedRange()
         guard selection.location != NSNotFound else { return false }
-        return selection != expected
+        return selection != expected && !ownsCompositionSelection(client)
     }
 
     private func apply(_ effect: EngineEffect, sender: Any!) {
         guard let client = sender as? IMKTextInput else { return }
         switch effect {
         case .marked(let text):
+            guard CompositionText.isSafe(text) else {
+                apply(engine.cancel(), sender: sender)
+                return
+            }
             // Avoid replacing a selection merely to display an empty onset.
             if !text.isEmpty || marked {
                 let visible = text.isEmpty ? originalSelection : text
-                client.setMarkedText(visible, selectionRange: NSRange(location: visible.utf16.count, length: 0), replacementRange: unspecified)
+                let underlined = NSAttributedString(string: visible, attributes: [
+                    .underlineStyle: NSUnderlineStyle.single.rawValue
+                ])
+                client.setMarkedText(underlined, selectionRange: NSRange(location: visible.utf16.count, length: 0), replacementRange: unspecified)
                 marked = !visible.isEmpty
-                expectedSelection = client.selectedRange()
+                // IMK can return the old caret immediately after setMarkedText.
+                // Predict the caret from the range we just sent, rather than
+                // mistaking the later acknowledgement for a user selection move.
+                expectedSelection = origin.map { NSRange(location: $0.location + visible.utf16.count, length: 0) }
             }
         case .commit(let text): commit(text, client: client)
         case .cancel:
@@ -316,6 +470,7 @@ final class InputSession {
     }
 
     private func commit(_ text: String, client: IMKTextInput) {
+        guard CompositionText.isSafe(text) else { return }
         let start = origin?.location ?? client.selectedRange().location
         client.insertText(text, replacementRange: unspecified)
         marked = false
@@ -326,7 +481,7 @@ final class InputSession {
         // IMK may acknowledge insertText before selectedRange reflects the commit.
         // Record a candidate now; validate both its caret and text on the next action.
         if start != NSNotFound {
-            history.append(CommittedCycle(text: text, range: range))
+            history.append(CommittedCycle(text: text, range: range, basis: engine.ascii ? nil : engine.lastCommittedBasis))
             if history.count > 128 { history.removeFirst() }
         } else { history.removeAll() }
     }
@@ -340,14 +495,16 @@ final class InputSession {
 
     private func deletePreviousCycle(_ client: IMKTextInput) -> Bool {
         let selection = client.selectedRange()
-        guard selection.location != NSNotFound, selection.length == 0, selection.location > 0 else { return false }
+        guard selection.location != NSNotFound, selection.length == 0, selection.location > 0 else {
+            return deletePreviousCycleFromHistory(client, caret: history.last.map { NSMaxRange($0.range) })
+        }
         let caret = selection.location
         var window = min(caret, 64)
 
         while true {
             let start = caret - window
             guard let text = documentText(client, range: NSRange(location: start, length: window)) else {
-                return false
+                return deletePreviousCycleFromHistory(client, caret: caret)
             }
             let characters = Array(text)
             var cursor = characters.count
@@ -391,6 +548,34 @@ final class InputSession {
         }
     }
 
+    private func deletePreviousCycleFromHistory(_ client: IMKTextInput, caret: Int?) -> Bool {
+        guard let caret = caret, caret > 0 else { return false }
+        var expectedEnd = caret
+        var pieces: [String] = []
+        for cycle in history.reversed() {
+            guard NSMaxRange(cycle.range) == expectedEnd else { break }
+            pieces.append(cycle.text)
+            expectedEnd = cycle.range.location
+        }
+        let text = pieces.reversed().joined()
+        guard !text.isEmpty else { return false }
+        let characters = Array(text)
+        var cursor = characters.count
+        while cursor > 0 && characters[cursor - 1] == " " { cursor -= 1 }
+        let alphaEnd = cursor
+        while cursor > 0 && characters[cursor - 1].unicodeScalars.contains(where: { $0.properties.isAlphabetic }) {
+            cursor -= 1
+        }
+        let immediateIsSpace = characters.last == " "
+        let immediateIsAlpha = characters.last?.unicodeScalars.contains(where: { $0.properties.isAlphabetic }) == true
+        guard immediateIsSpace || immediateIsAlpha else { return false }
+        guard cursor < alphaEnd else { return true }
+        if cursor > 0 && characters[cursor - 1] == " " { cursor -= 1 }
+        let removed = String(characters[cursor...]).utf16.count
+        client.insertText("", replacementRange: NSRange(location: caret - removed, length: removed))
+        return true
+    }
+
     private func documentText(_ client: IMKTextInput, range: NSRange) -> String? {
         if let text = client.attributedSubstring(from: range)?.string { return text }
         var actual = NSRange(location: NSNotFound, length: 0)
@@ -413,7 +598,7 @@ final class InputSession {
         }
         KeyboardPanel.shared.show(engine: engine, caret: rect.height > 0 ? rect : nil, message: message ?? notice,
                                   inputType: (currentProfile ?? profileProvider()).inputType,
-                                  asciiActions: ASCIIPlusMapping.actions(for: engine),
+                                  asciiActions: ASCIIPlusMapping.actions(for: engine, keymap: keymap),
                                   showKeyboard: (currentProfile ?? profileProvider()).showVirtualKeyboard)
         notice = nil
     }

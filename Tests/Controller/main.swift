@@ -8,8 +8,11 @@ final class TestDocument: NSObject, IMKTextInput {
     var selection = NSRange(location: 0, length: 0)
     var mark = NSRange(location: NSNotFound, length: 0)
     var deferNextCommitSelection = false
+    var deferNextMarkedSelection = false
     var staleSelection: NSRange?
     var attributedAccessEnabled = true
+    var plainAccessEnabled = true
+    var lastMarkedWasUnderlined = false
     func replace(_ value: String, range: NSRange) {
         text = (text as NSString).replacingCharacters(in: range, with: value)
         selection = NSRange(location: range.location + value.utf16.count, length: 0)
@@ -25,11 +28,20 @@ final class TestDocument: NSObject, IMKTextInput {
         }
     }
     func setMarkedText(_ string: Any!, selectionRange relative: NSRange, replacementRange range: NSRange) {
-        let value = (string as? String) ?? ""
+        let before = selection
+        let attributed = string as? NSAttributedString
+        let value = (string as? String) ?? attributed?.string ?? ""
+        if let attributed = attributed, attributed.length > 0 {
+            lastMarkedWasUnderlined = (attributed.attribute(.underlineStyle, at: 0, effectiveRange: nil) as? Int) == NSUnderlineStyle.single.rawValue
+        } else { lastMarkedWasUnderlined = false }
         let target = range.location != NSNotFound ? range : (mark.location != NSNotFound ? mark : selection)
         replace(value, range: target)
         mark = NSRange(location: target.location, length: value.utf16.count)
         selection = NSRange(location: target.location + relative.location, length: relative.length)
+        if deferNextMarkedSelection {
+            staleSelection = before
+            deferNextMarkedSelection = false
+        }
     }
     func selectedRange() -> NSRange { staleSelection ?? selection }
     func markedRange() -> NSRange { mark }
@@ -50,6 +62,7 @@ final class TestDocument: NSObject, IMKTextInput {
     func supportsProperty(_ property: TSMDocumentPropertyTag) -> Bool { true }
     func uniqueClientIdentifierString() -> String! { "test-document" }
     func string(from range: NSRange, actualRange: NSRangePointer!) -> String! {
+        guard plainAccessEnabled else { return nil }
         actualRange?.pointee = range
         guard range.location != NSNotFound, NSMaxRange(range) <= text.utf16.count else { return nil }
         return (text as NSString).substring(with: range)
@@ -70,6 +83,11 @@ let controller = InputSession(showGuide: false, profileProvider: { testProfile }
                               setASCIIMode: { persistentASCII = $0 })
 @discardableResult func press(_ key: UInt16, characters: String = "", flags: NSEvent.ModifierFlags = [], type: NSEvent.EventType = .keyDown, at time: TimeInterval? = nil, autoRelease: Bool = true, isRepeat: Bool = false) -> Bool {
     eventTime = time ?? eventTime + 0.01
+    if type == .flagsChanged && [56,60].contains(key) {
+        let side = flags.rawValue & 0x6
+        let down = side != 0 ? side & (key == 56 ? 0x2 : 0x4) != 0 : flags.contains(.shift)
+        if down { physicalKeys.insert(key) } else { physicalKeys.remove(key) }
+    }
     if type == .keyDown { physicalKeys.insert(key) }
     if type == .keyUp { physicalKeys.remove(key) }
     let event = NSEvent.keyEvent(with: type, location: .zero, modifierFlags: flags, timestamp: eventTime,
@@ -87,7 +105,7 @@ let controller = InputSession(showGuide: false, profileProvider: { testProfile }
     return handled
 }
 func expect(_ value: Bool, _ message: String) { checks += 1; if !value { fatalError(message) } }
-func ma() { for key: UInt16 in [15,18,18,18] { press(key) } }
+func ma() { for key: UInt16 in [15,20,18,18] { press(key) } }
 ma()
 expect(document.text == "ma ", "native controller must commit ma")
 press(46)
@@ -101,8 +119,8 @@ ma()
 controller.commitComposition(document)
 press(46)
 expect(document.text == "", "empty host boundary must preserve recent-cycle deletion")
-press(15); press(18); press(18); press(51)
-expect(document.text == "m", "Backspace must remove only the nucleus")
+press(15); press(20); press(18); press(51)
+expect(document.text == "ma", "Backspace undoes the final while retaining the combined vowel")
 press(53)
 expect(document.text == "", "Escape must cancel partial marked text")
 document.text = "keep"; document.selection = NSRange(location: 0, length: 4)
@@ -128,50 +146,55 @@ controller.activateServer(document)
 press(15)
 document.mark = NSRange(location: 40, length: 1)
 // The cached range is only a reported value: restore it before the mock's replacement operation.
-// Validate the selection-based movement decision directly by issuing an unused tone key first.
-press(26)
+// Validate the selection-based movement decision directly by issuing an unused vowel key first.
+press(45)
 expect(document.text == "m", "a stale marked range must not discard the new initial")
 document.mark = NSRange(location: 0, length: 1)
-press(18); press(18); press(18)
+press(20); press(18); press(18)
 expect(document.text == "ma ", "composition must recover after stale marked-range metadata")
 document.text = ""; document.selection = NSRange(location: 0, length: 0)
 document.mark = NSRange(location: NSNotFound, length: 0)
 testProfile.inputType = .asciiPlus
 controller.activateServer(document)
-press(46); press(13); press(0)
-expect(press(14) && document.text == "ma ", "ASCII+ consumes e as the empty final and commits ma")
+asciiKeys("wse")
+expect(document.text == "nha" && document.lastMarkedWasUnderlined,
+       "third round leaves the complete unaccented syllable underlined until tone selection")
+press(53)
+expect(document.text.isEmpty, "Cancelling the tone-preview regression restores the empty document")
+asciiKeys("mse")
+expect(press(1) && document.text == "ma ", "ASCII+ s commits ma after e selects the empty final")
 press(117)
 expect(document.text == "", "ASCII+ Fn+Backspace clears a completed cycle")
-press(46); press(14); press(0); press(14)
-expect(document.text == "ma´", "ASCII+ e selects sắc")
+asciiKeys("mse"); press(2)
+expect(document.text == "má ", "ASCII+ d selects sắc in the last round")
 press(46)
-expect(document.text == "ma´m", "ASCII+ m is a phoneme, not the grid clear key")
+expect(document.text == "má m", "ASCII+ m is a phoneme, not the grid clear key")
 press(51)
-expect(document.text == "ma´", "ASCII+ Backspace cancels a one-component cycle")
-press(46); press(13); press(32); press(14)
-expect(document.text == "ma´mia ", "ASCII+ u selects ia at nucleus phase")
+expect(document.text == "má ", "ASCII+ Backspace cancels a one-component cycle")
+asciiKeys("mees")
+expect(document.text == "má miê ", "ASCII+ e selects the combined bare iê nucleus")
 press(46)
 testProfile.inputType = .grid4x8
-press(15); press(18); press(18); press(18)
-expect(document.text == "ma´mia ma ", "changing input type cancels partial input and applies the new physical map")
+press(15); press(20); press(18); press(18)
+expect(document.text == "má miê ma ", "changing input type cancels partial input and applies the new physical map")
 testProfile.inputType = .asciiPlus
 press(56, flags: .shift, type: .flagsChanged); press(56, type: .flagsChanged)
 press(46, characters: "m")
-expect(document.text == "ma´mia ma m", "ASCII+ retains literal ASCII switching")
+expect(document.text == "má miê ma m", "ASCII+ retains literal ASCII switching")
 press(56, flags: .shift, type: .flagsChanged); press(56, type: .flagsChanged)
-press(46); press(13); press(0); press(14)
-expect(document.text == "ma´mia ma mma ", "Shift returns to the selected ASCII+ mode")
-press(46)
+asciiKeys("mse"); press(1)
+expect(document.text == "má miê ma mma ", "Shift returns to the selected ASCII+ mode")
+asciiKeys("mse")
 let beforeInvalid = document.text
 expect(press(35) && document.text == beforeInvalid, "a modal letter unavailable in the current phase is consumed without advancing")
 press(53)
 document.text = ""; document.selection = NSRange(location: 0, length: 0)
 document.mark = NSRange(location: NSNotFound, length: 0)
 controller.activateServer(document)
-press(46); press(16); press(0); press(14)
-expect(document.text == "ma?" && document.text.count == 3, "hỏi must commit as its own character after the syllable")
+asciiKeys("mse"); press(38)
+expect(document.text == "mả " && document.text.count == 3, "hỏi attaches to the core and adds a separator")
 press(117)
-expect(document.text == "", "cycle clear includes the standalone hỏi suffix")
+expect(document.text == "", "cycle clear includes the tone-bearing vowel and separator")
 func asciiKeys(_ keys: String) {
     for key in keys { press(ASCIIKeyboardLayout.keyCodesByLabel[String(key)]!) }
 }
@@ -197,76 +220,76 @@ let asciiHostText = asciiPassThrough.map(\.1).joined()
 expect(document.text == asciiHostText, "ASCII+ passes ordinary host characters unchanged")
 expect(!press(47, characters: ".", isRepeat: true), "Repeated punctuation continues through ASCII+")
 document.insertText(".", replacementRange: NSRange(location: NSNotFound, length: NSNotFound))
-asciiKeys("m")
+asciiKeys("ms")
 hostKey(43, ",")
-expect(document.text == asciiHostText + ".,", "Host punctuation cancels an unfinished ASCII+ syllable before insertion")
+expect(document.text == asciiHostText + ".ma,", "Host punctuation preserves an unfinished ASCII+ syllable before insertion")
 asciiKeys("m")
 let beforeModalRepeat = document.text
 expect(press(46, isRepeat: true) && document.text == beforeModalRepeat, "Repeated modal key does not advance another phase")
 expect(!press(96), "Function keys pass through ASCII+")
-expect(document.text == asciiHostText + ".,", "A function key cancels unfinished ASCII+ composition")
+expect(document.text == asciiHostText + ".ma,m", "A function key preserves unfinished ASCII+ text")
 
 testProfile.inputType = .grid4x8
 controller.activateServer(document)
 let gridPassThrough = asciiPassThrough.filter { ![18,19,20,21,23,22,26,28].contains($0.0) }
 for (key, characters) in gridPassThrough { hostKey(key, characters) }
 let gridHostText = gridPassThrough.map(\.1).joined()
-expect(document.text == asciiHostText + ".," + gridHostText, "grid4x8 passes keys outside its physical input grid")
+expect(document.text == asciiHostText + ".ma,m" + gridHostText, "grid4x8 passes keys outside its physical input grid")
 press(15)
 hostKey(47, ".")
-expect(document.text == asciiHostText + ".," + gridHostText + ".", "Host punctuation cancels an unfinished grid syllable before insertion")
+expect(document.text == asciiHostText + ".ma,m" + gridHostText + "m.", "Host punctuation preserves an unfinished grid syllable before insertion")
 testProfile.inputType = .asciiPlus
 controller.activateServer(document)
 document.text = ""; document.selection = NSRange(location: 0, length: 0)
 document.mark = NSRange(location: NSNotFound, length: 0)
-testProfile.outputType = .vietstandard
-asciiKeys("twei")
-expect(document.text == "tay ", "Selecting standard output must apply ei to ay conversion")
-asciiKeys("isueqwkq")
+testProfile.outputType = .quocNgu
+asciiKeys("twis")
+expect(document.text == "tay ", "Quốc ngữ spells short ă plus final i as ay")
+asciiKeys("iuesqeqs")
 expect(document.text == "tay khuya nghiêng ", "Standard output handles uia and ngh while separating syllables")
-asciiKeys("myae")
+asciiKeys("msej")
 expect(document.text == "tay khuya nghiêng mả ", "Standard hỏi attaches to the main vowel")
-asciiKeys("chae")
-expect(document.text == "tay khuya nghiêng mả cuả ", "c + u medial stays cuả rather than being rewritten as quả")
-asciiKeys("bsri")
-expect(document.text == "tay khuya nghiêng mả cuả uây ", "buêi displays as the requested uây exception")
-asciiKeys("bwri")
-expect(document.text == "tay khuya nghiêng mả cuả uây bây ", "bêi displays as bây")
-asciiKeys("eeie")
-expect(document.text == "tay khuya nghiêng mả cuả uây bây ý ", "standalone onsetless í displays with y")
+asciiKeys("chej")
+expect(document.text == "tay khuya nghiêng mả quả ", "Completed c + w + a is spelled quả")
+asciiKeys("bbis")
+expect(document.text == "tay khuya nghiêng mả quả buây ", "Rounded b + â + i preserves its initial in buây")
+asciiKeys("bzis")
+expect(document.text == "tay khuya nghiêng mả quả buây bây ", "b + â + i displays as bây")
+asciiKeys("eved")
+expect(document.text == "tay khuya nghiêng mả quả buây bây ý ", "standalone onsetless í displays with y")
 press(117)
-expect(document.text == "tay khuya nghiêng mả cuả uây bây ", "Clear removes a whole standard syllable including its space")
+expect(document.text == "tay khuya nghiêng mả quả buây bây ", "Clear removes a whole standard syllable including its space")
 document.text = ""; document.selection = NSRange(location: 0, length: 0)
 document.mark = NSRange(location: NSNotFound, length: 0)
 controller.activateServer(document)
-asciiKeys("tweiisueqwkq")
+asciiKeys("twisiuesqeqs")
 expect(document.text == "tay khuya nghiêng ", "Standard test state restored after c/u regression case")
-asciiKeys("mea")
-expect(document.text == "tay khuya nghiêng má", "Marked text shows the standard tone before final selection")
+asciiKeys("mse")
+expect(document.text == "tay khuya nghiêng ma", "Marked text stays unaccented until the final tone choice")
 press(51)
-expect(document.text == "tay khuya nghiêng m", "Backspace undoes the toned nucleus")
+expect(document.text == "tay khuya nghiêng ma", "Backspace undoes the final while retaining the selected vowel")
 press(53)
 expect(document.text == "tay khuya nghiêng ", "Escape cancels standard marked text")
-asciiKeys("mea")
-testProfile.outputType = .vietmoi
-asciiKeys("myae")
-expect(document.text == "tay khuya nghiêng ma?", "Changing output cancels partial standard text and preserves custom suffix output")
-testProfile.outputType = .vietstandard
+asciiKeys("mse")
+testProfile.outputType = .sieuviet
+asciiKeys("msej")
+expect(document.text == "tay khuya nghiêng mả ", "Changing output cancels partial standard text and preserves Sieuviet output")
+testProfile.outputType = .quocNgu
 testProfile.inputType = .grid4x8
-press(15); press(19); press(18); press(18)
-expect(document.text == "tay khuya nghiêng ma?má ", "Grid input also uses the selected standard formatter")
+press(15); press(20); press(18); press(19)
+expect(document.text == "tay khuya nghiêng mả má ", "Grid input also uses the selected standard formatter")
 press(56, flags: .shift, type: .flagsChanged); press(56, type: .flagsChanged)
 press(18, characters: "1")
-expect(document.text == "tay khuya nghiêng ma?má 1", "Literal ASCII bypasses standard syllable formatting and spacing")
+expect(document.text == "tay khuya nghiêng mả má 1", "Literal ASCII bypasses standard syllable formatting and spacing")
 document.selection = NSRange(location: 0, length: 3)
 press(56, flags: .shift, type: .flagsChanged); press(56, type: .flagsChanged)
 press(15); press(19); press(18); press(53)
-expect(document.text == "tay khuya nghiêng ma?má 1", "Cancelling a standard replacement restores the selected text")
+expect(document.text == "tay khuya nghiêng mả má 1", "Cancelling a standard replacement restores the selected text")
 
 // Shift+Backspace removes the preceding alphabetic cycle, spaces after it, and
 // the single separator space immediately before it.
 testProfile.inputType = .grid4x8
-testProfile.outputType = .vietmoi
+testProfile.outputType = .sieuviet
 persistentASCII = false
 document.text = "alpha beta   "; document.selection = NSRange(location: document.text.utf16.count, length: 0)
 document.mark = NSRange(location: NSNotFound, length: 0)
@@ -305,6 +328,19 @@ document.attributedAccessEnabled = false
 expect(press(51, flags: .shift) && document.text == "abc", "Plain document-string fallback supports real clients without attributed access")
 document.attributedAccessEnabled = true
 
+document.text = ""; document.selection = NSRange(location: 0, length: 0)
+document.mark = NSRange(location: NSNotFound, length: 0)
+for character in "abc nmq" {
+    let label = String(character)
+    let code: UInt16 = character == " " ? 49 : ASCIIKeyboardLayout.keyCodesByLabel[label]!
+    press(code, characters: label)
+}
+document.attributedAccessEnabled = false
+document.plainAccessEnabled = false
+expect(press(51, flags: .shift) && document.text == "abc", "Recent committed text supports clients that deny both document-reading APIs")
+document.attributedAccessEnabled = true
+document.plainAccessEnabled = true
+
 document.text = "prior "; document.selection = NSRange(location: document.text.utf16.count, length: 0)
 press(56, flags: .shift, type: .flagsChanged); press(56, type: .flagsChanged)
 asciiKeys("m")
@@ -314,7 +350,7 @@ func freshShiftTest() {
     document.text = ""; document.selection = NSRange(location: 0, length: 0)
     document.mark = NSRange(location: NSNotFound, length: 0)
     testProfile.inputType = .asciiPlus
-    testProfile.outputType = .vietmoi
+    testProfile.outputType = .sieuviet
     tapThreshold = 0.20
     eventTime = 0
     physicalKeys.removeAll()
@@ -332,6 +368,13 @@ func expectViet(_ message: String) {
 }
 
 freshShiftTest()
+document.deferNextMarkedSelection = true
+asciiKeys("m")
+document.staleSelection = nil
+expect(press(51, characters: "\u{8}") && document.text.isEmpty,
+       "Backspace removes the initial after the host asynchronously acknowledses its marked caret")
+
+freshShiftTest()
 shift(true, at: 1); shift(false, at: 1.1)
 expect(persistentASCII, "A Shift tap stores literal ASCII as input-method state")
 controller.deactivateServer(document)
@@ -347,17 +390,17 @@ asciiKeys("m")
 shift(true, at: 1)
 expect(document.text == "m", "Shift down must not toggle or cancel a composition")
 shift(false, at: 1.1)
-expect(document.text == "", "A short isolated release switches and cancels the partial cycle")
+expect(document.text == "m", "A short isolated release switches modes and preserves the initial")
 press(18, characters: "1")
-expect(document.text == "1", "Short tap enables literal ASCII")
+expect(document.text == "m1", "Short tap enables literal ASCII without dropping the initial")
 shift(true, at: 2); shift(false, at: 2.1)
-asciiKeys("mwae")
-expect(document.text == "1ma ", "A second short tap returns to Vietnamese")
+asciiKeys("mses")
+expect(document.text == "m1ma ", "A second short tap returns to Vietnamese")
 
 freshShiftTest()
 asciiKeys("m")
 shift(true, at: 1); shift(false, at: 1.5)
-asciiKeys("wae")
+asciiKeys("ses")
 expect(document.text == "ma ", "Long hold alone preserves the mode and partial cycle")
 freshShiftTest()
 shift(true, at: 0); shift(false, at: 0.2)
@@ -369,14 +412,14 @@ expect(!press(0, characters: "A", flags: .shift, at: 1.05, autoRelease: false), 
 shift(false, at: 1.1)
 press(0, type: .keyUp, at: 1.15)
 expectViet("Releasing Shift before the letter must not switch")
-asciiKeys("mwae")
+asciiKeys("mses")
 expect(document.text == "ma ", "Vietnamese typing resumes after the shifted chord")
 
 freshShiftTest()
-asciiKeys("mwa")
+asciiKeys("mse")
 shift(true, at: 1)
 expect(!press(18, characters: "!", flags: .shift, at: 1.05), "Shift+1 punctuation must pass through")
-expect(document.text == "", "A normal Shift chord cancels partial composition before host handling")
+expect(document.text == "ma", "A normal Shift chord preserves partial text before host handling")
 shift(false, at: 1.1)
 expectViet("Releasing the letter before Shift must not switch")
 
@@ -384,7 +427,7 @@ freshShiftTest()
 press(46, at: 1, autoRelease: false)
 shift(true, at: 1.02); shift(false, at: 1.05)
 press(46, type: .keyUp, at: 1.1)
-asciiKeys("wae")
+asciiKeys("ses")
 expect(document.text == "ma ", "A key already held when Shift starts prevents a tap switch")
 
 freshShiftTest()
@@ -459,10 +502,10 @@ shift(true, at: 1)
 controller.commitComposition(document)
 shift(false, at: 1.1)
 press(18, characters: "1")
-expect(document.text == "1", "Missing ordinary key-up must not permanently block Shift taps")
+expect(document.text == "m1", "Missing ordinary key-up must not permanently block Shift taps")
 shift(true, at: 2); shift(false, at: 2.1)
-asciiKeys("mwae")
-expect(document.text == "1ma ", "Mode switching recovers in both directions after a missing key-up")
+asciiKeys("mses")
+expect(document.text == "m1ma ", "Mode switching recovers in both directions after a missing key-up")
 
 freshShiftTest()
 shift(true, at: 1)
@@ -473,6 +516,280 @@ expectViet("A missing key-up inside a chord must still suppress that tap")
 shift(true, at: 2); shift(false, at: 2.1)
 press(18, characters: "1")
 expect(document.text == "1", "The next isolated tap recovers after a chord with a missing release")
+
+// Selection deletion must not leave a cached modifier latched for this text client.
+for literal in [false, true] {
+    for selectingShift: UInt16 in [56, 60] {
+        freshShiftTest()
+        persistentASCII = literal
+        controller.activateServer(document)
+        document.text = "keep delete"
+        document.selection = NSRange(location: document.text.utf16.count, length: 0)
+        press(selectingShift, flags: .shift, type: .flagsChanged, at: 1)
+        press(123, flags: .shift, at: 1.05)
+        document.selection = NSRange(location: 5, length: 6)
+        // Selection/editing clients can swallow the modifier release and Delete key-up.
+        physicalKeys.remove(selectingShift)
+        expect(!press(51, characters: "\u{8}", at: 1.2, autoRelease: false), "Deleting a selection is owned by the host")
+        document.insertText("", replacementRange: document.selection)
+        physicalKeys.remove(51)
+        expect(document.text == "keep ", "The host deletes only the selected text")
+        shift(true, at: 2); shift(false, at: 2.1)
+        expect(persistentASCII != literal, "The first tap after selection deletion toggles despite a missing modifier release")
+        shift(true, at: 3); shift(false, at: 3.1)
+        expect(persistentASCII == literal, "The next tap returns to the original mode in the same field")
+    }
+}
+
+// Mouse-selected text follows the same native deletion path in both layouts and
+// both output modes, including forward Delete and missing host key-up events.
+for layout: InputType in [.grid4x8, .asciiPlus] {
+    for literal in [false, true] {
+        for delete: UInt16 in [51,117] {
+            freshShiftTest()
+            testProfile.inputType = layout
+            persistentASCII = literal
+            controller.activateServer(document)
+            document.text = "before selected after"
+            document.selection = NSRange(location: document.text.utf16.count, length: 0)
+            let mouse = NSEvent.mouseEvent(with: .leftMouseDown, location: .zero, modifierFlags: [], timestamp: 1,
+                                           windowNumber: 0, context: nil, eventNumber: 1, clickCount: 1, pressure: 1)!
+            expect(!controller.handle(mouse, client: document), "Mouse selection remains native")
+            document.selection = NSRange(location: 7, length: 8)
+            controller.commitComposition(document)
+            expect(!press(delete, at: 1.2, autoRelease: false), "Both Delete keys pass selected-text deletion to the host")
+            document.insertText("", replacementRange: document.selection)
+            physicalKeys.remove(delete)
+            controller.commitComposition(document)
+            expect(document.text == "before  after", "Deleting selection leaves neighboring text intact")
+            for tap in 0..<3 {
+                shift(true, at: Double(tap + 2)); shift(false, at: Double(tap + 2) + 0.1)
+                expect(persistentASCII == (tap % 2 == 0 ? !literal : literal), "Repeated taps keep working in the same field after mouse deletion")
+            }
+        }
+    }
+}
+
+// A side-specific event also clears a stale opposite-side flag even if no
+// intermediate unshifted key event arrives at IMK.
+freshShiftTest()
+press(60, flags: rightFlags, type: .flagsChanged, at: 1)
+physicalKeys.remove(60)
+press(56, flags: leftFlags, type: .flagsChanged, at: 2)
+press(56, type: .flagsChanged, at: 2.1)
+expect(persistentASCII, "A fresh left-side snapshot clears a missed Right Shift release")
+
+// Replay the physical trace: a selected-text Delete gets no key-up at IMK,
+// then each Shift transition is delivered twice. Hardware Delete is released;
+// the native combined logical table can still report it down. The injected
+// key provider models hardware, matching the production HID state source.
+for literal in [false, true] {
+    freshShiftTest()
+    persistentASCII = literal
+    controller.activateServer(document)
+    document.text = "remove"
+    document.selection = NSRange(location: 0, length: 6)
+    expect(!press(51, characters: "\u{8}", at: 1, autoRelease: false), "Host handles selected-text Delete in trace replay")
+    document.insertText("", replacementRange: document.selection)
+    physicalKeys.remove(51)
+    for tap in 0..<4 {
+        let start = Double(tap + 2)
+        shift(true, at: start); shift(true, at: start + 0.004)
+        shift(false, at: start + 0.1); shift(false, at: start + 0.104)
+        expect(persistentASCII == (tap % 2 == 0 ? !literal : literal), "Missing Delete key-up and duplicate modifiers toggle once per hardware tap")
+    }
+}
+
+// Incomplete syllables/abbreviations are kept on a normal boundary, with no
+// fabricated tone or extra separator when entering literal ASCII.
+for layout: InputType in [.asciiPlus, .grid4x8] {
+    freshShiftTest()
+    testProfile.inputType = layout
+    controller.activateServer(document)
+    let initial: UInt16 = layout == .asciiPlus ? 46 : 15
+    press(initial)
+    expect(press(49, characters: " ") && document.text == "m ", "m + Space keeps the initial and inserts exactly one space")
+    expect(document.mark.location == NSNotFound, "Space ends the composition")
+    press(initial)
+    shift(true, at: 1); shift(false, at: 1.1)
+    expect(persistentASCII && document.text == "m m", "Mode switching preserves the partial initial without adding a space")
+    press(16, characters: "y")
+    expect(document.text == "m my", "m + Shift tap + y produces my")
+    shift(true, at: 2); shift(false, at: 2.1)
+    press(initial)
+    expect(press(51, characters: "\u{8}") && document.text == "m my", "Backspace immediately deletes the selected initial atom")
+}
+
+freshShiftTest()
+asciiKeys("ms")
+expect(press(49, characters: " ") && document.text == "ma ", "Space preserves a two-round abbreviation")
+asciiKeys("msn")
+expect(press(49, characters: " ") && document.text == "ma man ", "Space preserves a three-round abbreviation without requiring tone")
+asciiKeys("m")
+controller.commitComposition(document)
+expect(document.text == "ma man m", "A host-requested composition flush keeps a partial initial")
+shift(true, at: 3); shift(false, at: 3.1)
+press(16, characters: "y")
+expect(document.text == "ma man my", "A host flush before the mode switch does not erase or duplicate text")
+
+freshShiftTest()
+asciiKeys("m")
+expect(controller.command(NSSelectorFromString("deleteBackward:"), client: document) && document.text.isEmpty,
+       "Responder-command Backspace deletes an initial when no raw key event is delivered")
+expect(!controller.command(NSSelectorFromString("deleteBackward:"), client: document), "Idle responder Backspace remains native")
+asciiKeys("msn")
+expect(controller.command(NSSelectorFromString("deleteBackward:"), client: document) && document.text == "ma", "Responder Backspace undoes the final")
+expect(controller.command(NSSelectorFromString("deleteBackward:"), client: document) && document.text == "m", "Responder Backspace undoes the combined vowel")
+expect(controller.command(NSSelectorFromString("deleteBackwardByDecomposingPreviousCharacter:"), client: document) && document.text.isEmpty,
+       "Decomposing Backspace also deletes the initial")
+asciiKeys("m")
+expect(controller.command(NSSelectorFromString("insertSpace:"), client: document) && document.text == "m ", "Responder Space preserves abbreviations")
+asciiKeys("m")
+expect(controller.command(NSSelectorFromString("cancelOperation:"), client: document) && document.text == "m ", "Explicit Escape still discards progress")
+asciiKeys("msn")
+controller.deactivateServer(document)
+expect(document.text == "m man", "Leaving a field preserves the visible partial word without a separator")
+
+freshShiftTest()
+asciiKeys("m")
+shift(true, at: 1); shift(false, at: 1.1)
+press(16, characters: "y")
+expect(document.text == "my" && persistentASCII, "Exact m + isolated Shift tap + y flow keeps both characters")
+
+freshShiftTest()
+asciiKeys("j")
+expect(controller.compositionText == "ch", "IMK composition mirror contains the whole initial atom")
+expect(controller.command(NSSelectorFromString("deleteBackward:"), client: document) && document.text.isEmpty,
+       "Backspace removes the whole ch initial, not just its final letter")
+asciiKeys("m")
+expect(!controller.command(NSSelectorFromString("insertNewline:"), client: document) && document.text == "m", "Responder Return preserves text and leaves newline insertion to the host")
+asciiKeys("m")
+expect(!press(48, characters: "\t") && document.text == "mm", "Tab preserves the initial before native focus navigation")
+
+freshShiftTest()
+shift(true, at: 1)
+expect(!controller.command(NSSelectorFromString("noop:"), client: document), "Unrecognized host commands pass through")
+shift(false, at: 1.1)
+expect(persistentASCII, "A no-op command between modifier events does not suppress an isolated Shift tap")
+
+freshShiftTest()
+document.deferNextMarkedSelection = true
+asciiKeys("m")
+expect(press(51, characters: "\u{8}") && document.text.isEmpty,
+       "Backspace works even before the host acknowledses the marked caret")
+document.staleSelection = nil
+
+freshShiftTest()
+document.text = "keep"; document.selection = NSRange(location: 0, length: 4)
+document.deferNextMarkedSelection = true
+asciiKeys("m")
+expect(controller.command(NSSelectorFromString("deleteBackward:"), client: document) && document.text == "keep",
+       "Unacknowledged replacement selection does not divert initial undo to native deletion")
+document.staleSelection = nil
+
+freshShiftTest()
+document.deferNextMarkedSelection = true
+asciiKeys("m")
+shift(true, at: 1)
+expect(!controller.command(NSSelectorFromString("noop:"), client: document), "No-op does not discard a composition awaiting caret acknowledgement")
+shift(false, at: 1.1)
+document.staleSelection = nil
+press(16, characters: "y")
+expect(document.text == "my" && persistentASCII, "Mode switch preserves an initial while its caret acknowledgement is delayed")
+
+// Quốc ngữ renders only a complete four-round basis, including final o.
+freshShiftTest()
+testProfile.outputType = .quocNgu
+asciiKeys("qe")
+expect(document.text == "ngiê" && document.lastMarkedWasUnderlined, "Quốc ngữ keeps round-two spelling phonetic")
+asciiKeys("q")
+expect(document.text == "ngiêng", "Round three remains phonetic")
+press(51)
+expect(document.text == "ngiê", "Backspace undoes the phonetic final before translation")
+asciiKeys("qs")
+expect(document.text == "nghiêng ", "Tone completion translates the whole marked word exactly once")
+asciiKeys("rwos")
+expect(document.text == "nghiêng rau ", "Final o becomes u after the short vowel in quốc ngữ")
+asciiKeys("tsos")
+expect(document.text == "nghiêng rau tao ", "Final o remains o after long a")
+asciiKeys("imoj")
+expect(document.text == "nghiêng rau tao khuỷu ", "Both glides and tone translate from the completed basis")
+asciiKeys("frej")
+expect(document.text == "nghiêng rau tao khuỷu phở ", "Completed conversion can expand the initial's text length")
+press(117)
+expect(document.text == "nghiêng rau tao khuỷu ", "Clear deletes the translated range, including the expanded ph initial")
+asciiKeys("jl")
+press(49, characters: " ")
+expect(document.text == "nghiêng rau tao khuỷu chuô ", "Space preserves partial phonetic spelling in quốc ngữ")
+asciiKeys("f")
+shift(true, at: eventTime + 1); shift(false, at: eventTime + 0.1)
+press(16, characters: "y")
+expect(document.text == "nghiêng rau tao khuỷu chuô fy", "ASCII switching preserves an untranslated initial")
+testProfile.outputType = .sieuviet
+
+// Initial-round swap: physical z selects z; physical j selects ch. The guide
+// and native key routing must agree, while other rounds keep their own bindings.
+freshShiftTest()
+let initialActions = ASCIIPlusMapping.actions(for: KeyboardEngine())
+expect(initialActions[6] == "z" && initialActions[38] == "ch", "Guide labels expose the swapped initial atoms")
+asciiKeys("zsesjsos")
+expect(document.text == "za chao ", "Native routing uses z for z and j for ch")
+
+// oo is on a; semicolon remains native punctuation in every round.
+freshShiftTest()
+let initialSemicolonActions = ASCIIPlusMapping.actions(for: KeyboardEngine())
+expect(initialSemicolonActions[41] == nil, "Semicolon has no modal action in the initial round")
+asciiKeys("xaqs")
+expect(document.text == "xoong ", "Native a key selects the whole oo nucleus")
+asciiKeys("sacd")
+expect(document.text == "xoong soóc ", "Tone is applied to the second o of oo")
+asciiKeys("x")
+expect(press(0, characters: "a", isRepeat: true), "Repeating a vowel atom is consumed without advancing")
+expect(document.text == "xoong soóc x", "Repeated modal a leaves composition unchanged")
+hostKey(41, ";")
+expect(document.text == "xoong soóc x;", "Semicolon finishes a partial vowel round and passes through literally")
+var semicolonGuide = KeyboardEngine()
+_ = semicolonGuide.selectComponent(0)
+expect(ASCIIPlusMapping.actions(for: semicolonGuide)[0] == "oo" && ASCIIPlusMapping.actions(for: semicolonGuide)[41] == nil, "Round-two guide shows oo on a and no semicolon atom")
+
+// Regression: real event payloads for editing commands are never inserted as text.
+freshShiftTest()
+asciiKeys("mse")
+expect(document.text == "ma", "Sieuviet preview remains unaccented before the last tone choice")
+expect(press(51, characters: "\u{8}") && document.text == "ma", "Backspace payload undoes a component without emitting U+0008")
+expect(press(53, characters: "\u{1B}") && document.text.isEmpty, "Escape payload cancels without emitting U+001B")
+expect(!press(51, characters: "\u{8}") && document.text.isEmpty, "Idle Backspace remains a native host command")
+expect(!press(53, characters: "\u{1B}") && document.text.isEmpty, "Idle Escape remains a native host command")
+for control in ["\u{0}", "\u{8}", "\u{1B}", "\u{9B}"] {
+    expect(press(10, characters: control) && document.text.isEmpty, "Unrecognized control payload is consumed without text insertion")
+}
+expect(!press(36, characters: "\r"), "Return retains native command handling")
+expect(!press(48, characters: "\t"), "Tab retains native command handling")
+expect(!press(122, characters: "\u{F704}"), "Function keys retain native command handling")
+asciiKeys("ms")
+expect(document.text == "ma", "Combined vowel preview appears before final and tone choices")
+asciiKeys("ek")
+expect(document.text == "mã ", "Last tone choice accents the core and commits the word")
+asciiKeys("mses")
+expect(document.text == "mã ma ", "Repeated cycles retain one separator per syllable")
+press(117, characters: "\u{F728}")
+expect(document.text == "mã ", "Forward Delete clears the full cycle without inserting its event payload")
+press(46); press(53, characters: "\u{1B}")
+expect(document.text == "mã ", "Cancelling a later cycle preserves prior text")
+
+// Profile remaps drive event routing and guide labels through the same bindings.
+var alternate = ASCIIPlusKeymap.sieuviet
+alternate.initials["b"] = "m"; alternate.initials["m"] = "b"
+testProfile.asciiPlusKeymap = alternate
+asciiKeys("bses")
+expect(document.text == "mã ma ", "Controller honors a per-profile physical-key remap")
+testProfile.asciiPlusKeymap = nil
+shift(true, at: eventTime + 1); shift(false, at: eventTime + 0.1)
+expect(persistentASCII, "Enter literal mode for control regression")
+for control in ["\u{8}", "\u{1B}"] {
+    let before = document.text
+    expect(press(10, characters: control) && document.text == before, "Literal mode cannot insert control payloads either")
+}
 
 print("Passed \(checks) native document-session and Shift interaction checks.")
 

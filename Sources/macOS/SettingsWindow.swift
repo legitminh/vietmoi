@@ -2,45 +2,41 @@ import AppKit
 
 private final class ProfilesListView: NSView { override var isFlipped: Bool { true } }
 
-final class ProfileCard: NSView {
+final class ProfileCard: ThemedSurface {
     let profileID: UUID
     let input = NSPopUpButton(frame: .zero, pullsDown: false)
     let output = NSPopUpButton(frame: .zero, pullsDown: false)
-    private let visibility = NSButton(checkboxWithTitle: "Show virtual keyboard", target: nil, action: nil)
+    private let visibility = NSButton(checkboxWithTitle: AppCopy.text("showKeyboard"), target: nil, action: nil)
     private let store: KeyboardProfiles
 
     init(profile: KeyboardProfile, store: KeyboardProfiles) {
         self.profileID = profile.id
         self.store = store
-        super.init(frame: NSRect(x: 0, y: 0, width: 620, height: 144))
-        wantsLayer = true
-        layer?.cornerRadius = 12
-        layer?.backgroundColor = NSColor.controlBackgroundColor.cgColor
-        layer?.borderWidth = 1
-        layer?.borderColor = (store.active.id == profile.id ? NSColor.systemTeal.withAlphaComponent(0.7) : NSColor.separatorColor).cgColor
-        let name = NSTextField(labelWithString: profile.name)
-        name.font = .systemFont(ofSize: 15, weight: .semibold)
+        super.init(frame: NSRect(x: 0, y: 0, width: 620, height: 144), radius: AppDesign.panelRadius)
+        outline = store.active.id == profile.id ? AppTheme.ink : AppTheme.border
+        let name = NSTextField(labelWithString: profile.name == "Default keyboard" ? AppCopy.text("defaultKeyboard") : profile.name)
+        name.font = AppTheme.font(15, weight: .semibold)
         name.frame = NSRect(x: 18, y: 107, width: 290, height: 22)
         addSubview(name)
 
-        let use = NSButton(title: store.active.id == profile.id ? "Selected" : "Select", target: self, action: #selector(selectProfile))
+        let use = NSButton(title: store.active.id == profile.id ? AppCopy.text("selected") : AppCopy.text("select"), target: self, action: #selector(selectProfile))
         use.bezelStyle = .rounded
         use.isEnabled = store.active.id != profile.id
         use.frame = NSRect(x: 426, y: 103, width: 88, height: 30)
-        use.setAccessibilityLabel("Select \(profile.name)")
+        use.setAccessibilityLabel(AppCopy.text("selectProfile", ["name": profile.name]))
         addSubview(use)
-        let remove = NSButton(image: NSImage(systemSymbolName: "minus.circle", accessibilityDescription: "Remove keyboard")!, target: self, action: #selector(removeProfile))
+        let remove = NSButton(image: NSImage(systemSymbolName: "minus.circle", accessibilityDescription: AppCopy.text("removeKeyboard"))!, target: self, action: #selector(removeProfile))
         remove.isBordered = false
         remove.frame = NSRect(x: 564, y: 105, width: 30, height: 28)
         remove.isEnabled = store.profiles.count > 1
-        remove.toolTip = remove.isEnabled ? "Remove \(profile.name)" : "Keep at least one keyboard"
-        remove.setAccessibilityLabel("Remove \(profile.name)")
+        remove.toolTip = remove.isEnabled ? AppCopy.text("removeProfile", ["name": profile.name]) : AppCopy.text("keepKeyboard")
+        remove.setAccessibilityLabel(AppCopy.text("removeProfile", ["name": profile.name]))
         addSubview(remove)
 
-        for (text, x) in [("Input type", 18), ("Output type", 320)] {
+        for (text, x) in [(AppCopy.text("inputLabel"), 18), (AppCopy.text("outputLabel"), 320)] {
             let label = NSTextField(labelWithString: text)
-            label.font = .systemFont(ofSize: 12, weight: .medium)
-            label.textColor = .secondaryLabelColor
+            label.font = AppTheme.font(12, weight: .medium)
+            label.textColor = AppTheme.muted
             label.frame = NSRect(x: x, y: 75, width: 270, height: 18)
             addSubview(label)
         }
@@ -49,27 +45,23 @@ final class ProfileCard: NSView {
         input.selectItem(withTitle: profile.inputType.rawValue)
         input.target = self
         input.action = #selector(changeInput)
-        input.setAccessibilityLabel("Input type for \(profile.name)")
+        input.setAccessibilityLabel(AppCopy.text("inputProfile", ["name": profile.name]))
         addSubview(input)
         output.frame = NSRect(x: 316, y: 38, width: 286, height: 30)
-        output.addItems(withTitles: OutputType.allCases.map(\.rawValue))
-        output.selectItem(withTitle: profile.outputType.rawValue)
+        output.addItems(withTitles: OutputType.allCases.map(\.displayName))
+        output.selectItem(at: OutputType.allCases.firstIndex(of: profile.outputType)!)
         output.target = self
         output.action = #selector(changeOutput)
-        output.setAccessibilityLabel("Output type for \(profile.name)")
+        output.setAccessibilityLabel(AppCopy.text("outputProfile", ["name": profile.name]))
         addSubview(output)
         visibility.frame = NSRect(x: 18, y: 9, width: 270, height: 22)
         visibility.state = profile.showVirtualKeyboard ? .on : .off
         visibility.target = self
         visibility.action = #selector(changeVisibility)
-        visibility.setAccessibilityLabel("Show virtual keyboard for \(profile.name)")
-        visibility.toolTip = "When off, only the settings gear appears while typing."
+        visibility.setAccessibilityLabel(AppCopy.text("showProfile", ["name": profile.name]))
+        visibility.toolTip = AppCopy.text("hideKeyboardHelp")
         addSubview(visibility)
-        let status = NSTextField(labelWithString: "Settings gear is always available")
-        status.font = .systemFont(ofSize: 11)
-        status.textColor = .tertiaryLabelColor
-        status.frame = NSRect(x: 320, y: 12, width: 280, height: 16)
-        addSubview(status)
+
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
     @objc private func selectProfile() { store.select(profileID) }
@@ -78,7 +70,8 @@ final class ProfileCard: NSView {
         if let title = input.titleOfSelectedItem, let type = InputType(rawValue: title) { store.update(profileID, input: type) }
     }
     @objc private func changeOutput() {
-        if let title = output.titleOfSelectedItem, let type = OutputType(rawValue: title) { store.update(profileID, output: type) }
+        let index = output.indexOfSelectedItem
+        if OutputType.allCases.indices.contains(index) { store.update(profileID, output: OutputType.allCases[index]) }
     }
     @objc private func changeVisibility() {
         store.update(profileID, showVirtualKeyboard: visibility.state == .on)
@@ -94,34 +87,42 @@ final class SettingsWindow: NSWindowController, NSWindowDelegate, NSTextFieldDel
     private let shiftTapField = NSTextField()
     private let shiftTapHint = NSTextField(wrappingLabelWithString: "")
     private var observer: NSObjectProtocol?
+    private let language = NSPopUpButton(frame: .zero, pullsDown: false)
 
     private init() {
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 680, height: 640),
                               styleMask: [.titled, .closable, .miniaturizable], backing: .buffered, defer: false)
-        window.title = "viet"
+        window.title = AppDesign.name
+        window.backgroundColor = AppTheme.background
         window.isReleasedWhenClosed = false
         super.init(window: window)
         window.delegate = self
         window.center()
+        AppCopy.language = preferences.language
+        buildContent()
+        observer = NotificationCenter.default.addObserver(forName: KeyboardProfiles.didChange, object: store, queue: .main) { [weak self] _ in self?.reloadProfiles() }
+    }
+    private func buildContent() {
+        guard let window = window else { return }
         let content = NSView(frame: NSRect(x: 0, y: 0, width: 680, height: 640))
         window.contentView = content
-        let title = NSTextField(labelWithString: "Your keyboards")
-        title.font = .systemFont(ofSize: 26, weight: .semibold)
+        let title = NSTextField(labelWithString: "★ " + AppDesign.name)
+        title.font = AppTheme.font(26, weight: .semibold)
         title.frame = NSRect(x: 28, y: 581, width: 430, height: 34)
         content.addSubview(title)
-        let subtitle = NSTextField(labelWithString: "Create a keyboard and choose how you type and write.")
-        subtitle.font = .systemFont(ofSize: 13)
-        subtitle.textColor = .secondaryLabelColor
+        let subtitle = NSTextField(labelWithString: AppCopy.text("tagline"))
+        subtitle.font = AppTheme.font(13)
+        subtitle.textColor = AppTheme.muted
         subtitle.frame = NSRect(x: 28, y: 552, width: 625, height: 22)
         content.addSubview(subtitle)
-        let add = NSButton(title: "Add keyboard", target: self, action: #selector(addKeyboard))
+        let add = NSButton(title: AppCopy.text("addKeyboard"), target: self, action: #selector(addKeyboard))
         add.image = NSImage(systemSymbolName: "plus", accessibilityDescription: nil)
         add.imagePosition = .imageLeading
         add.bezelStyle = .rounded
         add.frame = NSRect(x: 510, y: 584, width: 145, height: 30)
         content.addSubview(add)
 
-        scroll.frame = NSRect(x: 28, y: 220, width: 624, height: 309)
+        scroll.frame = NSRect(x: 28, y: 268, width: 624, height: 261)
         scroll.hasVerticalScroller = true
         scroll.drawsBackground = false
         list.orientation = .vertical
@@ -141,47 +142,58 @@ final class SettingsWindow: NSWindowController, NSWindowDelegate, NSTextFieldDel
         ])
         content.addSubview(scroll)
 
-        let note = NSTextField(wrappingLabelWithString: "grid4x8 and ascii+ support vietmoi and standard Vietnamese output. Standard output adds a space after each syllable. Telex input is coming later.")
-        note.font = .systemFont(ofSize: 12)
-        note.textColor = .secondaryLabelColor
+        let languageLabel = NSTextField(labelWithString: AppCopy.text("language"))
+        languageLabel.font = AppTheme.font(13)
+        languageLabel.frame = NSRect(x: 28, y: 232, width: 280, height: 20)
+        content.addSubview(languageLabel)
+        language.frame = NSRect(x: 320, y: 226, width: 280, height: 30)
+        language.removeAllItems()
+        language.addItems(withTitles: [AppCopy.text("vietnamese"), AppCopy.text("english")])
+        language.selectItem(at: preferences.language == "en" ? 1 : 0)
+        language.target = self; language.action = #selector(changeLanguage)
+        language.setAccessibilityLabel(AppCopy.text("language"))
+        content.addSubview(language)
+        let note = NSTextField(wrappingLabelWithString: AppCopy.text("roundHelp"))
+        note.font = AppTheme.font(12)
+        note.textColor = AppTheme.muted
         note.frame = NSRect(x: 28, y: 160, width: 624, height: 48)
         content.addSubview(note)
-        let shiftLabel = NSTextField(labelWithString: "Left Shift tap limit")
-        shiftLabel.font = .systemFont(ofSize: 13, weight: .medium)
-        shiftLabel.frame = NSRect(x: 28, y: 121, width: 180, height: 20)
+        let shiftLabel = NSTextField(labelWithString: AppCopy.text("shiftLimit"))
+        shiftLabel.font = AppTheme.font(13, weight: .medium)
+        shiftLabel.frame = NSRect(x: 28, y: 121, width: 250, height: 20)
         content.addSubview(shiftLabel)
-        shiftTapField.frame = NSRect(x: 214, y: 117, width: 85, height: 26)
+        shiftTapField.frame = NSRect(x: 280, y: 117, width: 85, height: 26)
         shiftTapField.delegate = self
         shiftTapField.target = self
         shiftTapField.action = #selector(saveShiftTap)
-        shiftTapField.setAccessibilityLabel("Left Shift tap limit in seconds")
+        shiftTapField.setAccessibilityLabel(AppCopy.text("shiftLimit"))
         content.addSubview(shiftTapField)
-        let seconds = NSTextField(labelWithString: "seconds")
-        seconds.frame = NSRect(x: 307, y: 121, width: 65, height: 20)
+        let seconds = NSTextField(labelWithString: AppCopy.text("seconds"))
+        seconds.frame = NSRect(x: 375, y: 121, width: 65, height: 20)
         content.addSubview(seconds)
-        let reset = NSButton(title: "Reset", target: self, action: #selector(resetShiftTap))
+        let reset = NSButton(title: AppCopy.text("reset"), target: self, action: #selector(resetShiftTap))
         reset.bezelStyle = .rounded
-        reset.frame = NSRect(x: 382, y: 115, width: 78, height: 30)
-        reset.toolTip = "Restore the default \(KeyboardPreferences.defaultShiftTapSeconds)-second tap limit"
-        reset.setAccessibilityLabel("Reset Shift tap limit")
+        reset.frame = NSRect(x: 466, y: 115, width: 130, height: 30)
+        reset.toolTip = AppCopy.text("resetShiftHelp", ["seconds": String(KeyboardPreferences.defaultShiftTapSeconds)])
+        reset.setAccessibilityLabel(AppCopy.text("resetShift"))
         content.addSubview(reset)
-        shiftTapHint.font = .systemFont(ofSize: 11)
+        shiftTapHint.font = AppTheme.font(11)
         shiftTapHint.frame = NSRect(x: 28, y: 77, width: 624, height: 32)
         content.addSubview(shiftTapHint)
         showShiftTapPreference()
-        let hide = NSButton(title: "Hide & keep typing", target: self, action: #selector(hideSetup))
+        let hide = NSButton(title: AppCopy.text("hideAndType"), target: self, action: #selector(hideSetup))
         hide.bezelStyle = .rounded
         hide.keyEquivalent = "\r"
         hide.frame = NSRect(x: 478, y: 27, width: 180, height: 34)
         content.addSubview(hide)
-        let hint = NSTextField(labelWithString: "Reopen with ⚙ in the keyboard popup.")
-        hint.font = .systemFont(ofSize: 12)
-        hint.textColor = .secondaryLabelColor
-        hint.frame = NSRect(x: 28, y: 34, width: 440, height: 20)
+        let hint = NSTextField(labelWithString: AppCopy.text("reopenHelp"))
+        hint.font = AppTheme.font(12)
+        hint.textColor = AppTheme.muted
+        hint.frame = NSRect(x: 28, y: 30, width: 400, height: 38)
+        hint.lineBreakMode = .byWordWrapping
+        hint.maximumNumberOfLines = 2
         content.addSubview(hint)
-        observer = NotificationCenter.default.addObserver(forName: KeyboardProfiles.didChange, object: store, queue: .main) { [weak self] _ in
-            self?.reloadProfiles()
-        }
+        applyTypography(to: content)
         reloadProfiles()
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
@@ -207,10 +219,10 @@ final class SettingsWindow: NSWindowController, NSWindowDelegate, NSTextFieldDel
         formatter.minimumFractionDigits = 2
         formatter.maximumFractionDigits = 3
         shiftTapField.stringValue = formatter.string(from: NSNumber(value: preferences.shiftTapSeconds)) ?? "0.20"
-        shiftTapHint.textColor = error ? .systemRed : .secondaryLabelColor
+        shiftTapHint.textColor = error ? .systemRed : AppTheme.muted
         shiftTapHint.stringValue = error
-            ? "Enter 0.01–5 seconds. Your previous value was kept."
-            : "All keyboards · Tap alone to switch modes. Hold or use with another key for normal Shift."
+            ? AppCopy.text("shiftLimitError")
+            : AppCopy.text("shiftLimitHelp")
     }
     @objc private func saveShiftTap() {
         let value = shiftTapField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -226,16 +238,29 @@ final class SettingsWindow: NSWindowController, NSWindowDelegate, NSTextFieldDel
     func controlTextDidEndEditing(_ notification: Notification) {
         if notification.object as? NSTextField === shiftTapField { saveShiftTap() }
     }
+    @objc private func changeLanguage() {
+        window?.makeFirstResponder(nil)
+        preferences.language = language.indexOfSelectedItem == 1 ? "en" : "vi"
+        AppCopy.language = preferences.language
+        buildContent()
+        NotificationCenter.default.post(name: AppCopy.didChange, object: nil)
+    }
     @objc private func addKeyboard() {
         let id = store.add()
         if let card = list.arrangedSubviews.compactMap({ $0 as? ProfileCard }).first(where: { $0.profileID == id }) {
             card.scrollToVisible(card.bounds)
         }
     }
+    private func applyTypography(to view: NSView) {
+        if let control = view as? NSControl, !(control is NSTextField) { control.font = AppTheme.font(12) }
+        if let label = view as? NSTextField, label.textColor == .labelColor { label.textColor = AppTheme.ink }
+        for child in view.subviews { applyTypography(to: child) }
+    }
     private func reloadProfiles() {
         for view in list.arrangedSubviews { list.removeArrangedSubview(view); view.removeFromSuperview() }
         for profile in store.profiles {
             let card = ProfileCard(profile: profile, store: store)
+            applyTypography(to: card)
             card.translatesAutoresizingMaskIntoConstraints = false
             list.addArrangedSubview(card)
             card.heightAnchor.constraint(equalToConstant: 144).isActive = true
