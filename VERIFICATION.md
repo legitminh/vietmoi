@@ -1,3 +1,38 @@
+# GitHub release builds — 2026-11-15
+
+Version 0.12.0, build 37, is packaged for macOS, iOS, Android, Windows and Ubuntu.
+The complete local source is published to `legitminh/vietmoi`, retaining the
+repository's existing history. See `RELEASING.md` for installation and signing.
+
+- Shared portable suites passed: 158,458 engine checks, 39,692 ASCII+ checks,
+  118,985 quốc ngữ checks, 40 profile checks and 27 Shift checks. Swift package
+  tests passed all eight tests; C and C++ each passed 200 ABI checks.
+- Native Apple checks passed: 296 controller checks and 86 mobile session checks.
+  macOS includes arm64 and x86_64 slices, passes strict signature verification,
+  and is installed and running with the rebuilt executable and matching build
+  fingerprint. iOS Release device compilation passed for app and keyboard;
+  archive metadata and contents were verified. The IPA is unsigned.
+- Android universal APK includes 19 native libraries for each of arm64-v8a and
+  x86_64 and passes APK signature verification. All 10 actual-IME/emulator tests
+  passed, including all 79,200 constructions. The initial full run encountered a
+  UiAutomator stale accessibility object in the focus test; the focused rerun and
+  subsequent full suite passed without source changes.
+- Ubuntu 26.04 x64 and ARM64 passed actual IBus/Fcitx typing in GTK and Qt and the
+  native settings checks. Both `.deb` packages passed dependency resolution,
+  disposable-container installation and 32 checks against the installed engine.
+  x64 binaries execute under container emulation on this Apple Silicon Mac.
+- Windows x64 and ARM64 passed native Swift/MSVC builds, packaging and all 32
+  policy checks against their actual packaged Swift engines. Runtime search
+  excludes the toolchain, and packages include matching Visual C++ runtimes.
+  Evidence: https://github.com/legitminh/vietmoi/actions/runs/43779693664
+  Binary build commit: `e43ca9b7ae2f94088090612b9faa958ffc169764`.
+
+These are development prereleases: macOS lacks Developer ID notarization; the
+Android APK uses development signing; iOS requires user re-signing; interactive
+Windows TSF registration/typing, physical mobile compatibility and broader
+Wayland/application qualification remain outstanding. Earlier sections below
+record the project's development history and may describe superseded status.
+
 # Linux and Windows adapters — November 15, 2026
 
 - Implemented IBus, Fcitx 5 and Windows TSF using the same Swift engine and C ABI. Shared C++ desktop session policy handles ASCII+/grid routing, repeat, Shift, undo and effect application. No linguistic tables were copied into adapters. wê remains on n, wi on m, and final o is unchanged.

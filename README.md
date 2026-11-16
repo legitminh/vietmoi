@@ -38,9 +38,9 @@ A native Vietnamese keyboard with a shared engine and four rounds:
 
 The iOS and Android apps/keyboards share this engine. Android calls the same
 Swift core through JNI. Linux now has IBus and Fcitx 5 adapters verified in GTK/Qt
-X11 hosts on ARM64 and x64. Windows has x64/ARM64 TSF and settings binaries that
-pass cross-build checks; Windows Swift DLL loading and actual TSF typing remain
-unverified, with interactive testing deferred by request. See [desktop setup and
+X11 hosts on ARM64 and x64. Windows x64/ARM64 packages now build natively and pass
+checks against their packaged Swift engine and runtime. Actual TSF registration
+and interactive typing remain unverified, with interactive testing deferred by request. See [desktop setup and
 validation](Desktop/README.md) and the
 [cross-platform architecture and development/testing plan](CROSS_PLATFORM.md)
 for the decisions, migration order, support matrix, and release gates.
@@ -298,7 +298,9 @@ an active old instance before replacement, and preserves its registered input
 source ID. The installer restores the input source if it was active before the update. First-time users
 add siêu việt in System Settings → Keyboard → Text Input → Edit → +. macOS may need
 logout/login to refresh its cache. Builds are locally ad-hoc signed; public
-release requires Developer ID signing and notarization. Windows TSF and settings are implemented and cross-built; Windows runtime and real-app typing qualification remain outstanding. See [desktop status](Desktop/README.md).
+release requires Developer ID signing and notarization. Windows packages are
+natively built and engine-smoke-tested; real-app TSF typing qualification remains
+outstanding. See [desktop status](Desktop/README.md).
 
 Tests enumerate all **39,600** combinations for safe NFC output, tone placement,
 spacing, basis consistency, and grid/ASCII+ physical-path equivalence. Native

@@ -15,11 +15,14 @@ Vietnamese/English copy alongside the Apple and Android outputs.
   spellings, ASCII+ / grid, unavailable keys, per-round undo, cancel, mode
   switching, selection replacement, safe cycle deletion and focus changes.
   x64 executes through container emulation on the Apple Silicon development host.
-- Windows x64 and ARM64: TSF DLL, settings/practice application and native session
-  test executable cross-compile and link to PE binaries. **The Windows Swift DLL
-  build/loading and actual TSF registration/typing have not run on Windows.**
-  Interactive Windows testing is deferred at the user's request. The Windows
-  outputs are development build checks, not an installable, qualified release.
+- Windows x64 and ARM64: native GitHub runners build the real Swift engine DLL,
+  TSF DLL, settings/practice app and session tests. Both packaged engines pass
+  32 desktop policy checks with the toolchain removed from the runtime search
+  path. Packages include Swift and Visual C++ runtimes and registration scripts.
+  **Actual TSF registration and interactive typing remain unverified.**
+  Interactive Windows testing is deferred at the user's request. Downloads are
+  development prereleases, with installation and qualification limits in
+  [RELEASING.md](../RELEASING.md).
 - GNOME/KDE Wayland sessions, browsers, terminals, other Linux distributions and
   physical Windows hosts remain qualification work. Xvfb tests are real toolkit
   integrations, not a substitute for that desktop/application matrix.
@@ -68,8 +71,9 @@ Development archives from this verification run are at
 `build/linux-desktop/sieuviet-linux-arm64-0.12.0-dev.tar.gz` and
 `build/linux-desktop-x64/sieuviet-linux-x64-0.12.0-dev.tar.gz`. They contain the
 system-prefix tree for the tested Ubuntu 26.04 environment, not a universal
-Linux installer. Distribution dependency metadata and public release packaging
-are still required.
+Linux installer. The GitHub prerelease now also provides Ubuntu 26.04 `.deb`
+packages for both architectures, with bundled Swift runtimes and dependency
+metadata. Both packages passed installation and installed-engine smoke checks.
 
 The staged tree contains `/usr/lib/sieuviet` with the engine and its Swift runtime,
 IBus component metadata/executable, the Fcitx addon in Fcitx's configured library
@@ -126,8 +130,8 @@ build tools/Windows SDK. In a matching-architecture Developer PowerShell:
 ```
 
 This builds the real Swift DLL and native targets, packages runtime DLLs, then
-runs the desktop policy tests against that packaged library. These commands are
-provided but have not yet been executed on Windows. The smoke test must pass
+runs the desktop policy tests against that packaged library. These commands have
+run successfully on native x64 and ARM64 GitHub runners. The smoke test must pass
 before registration. Keep the package at its final installation path. Run its
 `install.ps1` elevated with matching-architecture PowerShell; it smoke-tests the
 engine again before `regsvr32`. It does not select Sieuviet as the default.
@@ -139,9 +143,10 @@ close hosts before deleting the package. Settings remain in
 Before calling Windows supported, run native Swift builds/loading, TSF
 registration/unregistration, activation cycles, x64/ARM64 real-app typing,
 selection/caret/focus changes, shortcuts, Shift/repeat, Unicode-adjacent deletion,
-password fields, runtime deployment and upgrade checks. 32-bit hosts and
-AppContainer/Store applications are not qualified. Signed public installers and
-release publication remain future work.
+password fields and upgrade checks. Native Swift builds/loading and packaged
+runtime smoke checks now pass on both architectures. 32-bit hosts and
+AppContainer/Store applications are not qualified. Signed public installers
+remain future work; unsigned development packages are published on GitHub.
 
 ## Making a keyboard change
 
