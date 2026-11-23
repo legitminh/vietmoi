@@ -273,7 +273,8 @@ import Foundation
         writer = nil
         let reader = MobileSettingsStore(snapshotURL: snapshot, defaults: defaults)
         expect(reader.load() == MobileKeyboardSettings(input: .grid4x8, output: .quocNgu), "Keyboard reads saved choices after the app object exits")
-        expect((try! Data(contentsOf: snapshot)).count < 100, "Snapshot contains only keyboard and language choices")
+        let snapshotKeys = Set(((try! JSONSerialization.jsonObject(with: Data(contentsOf: snapshot))) as! [String: Any]).keys)
+        expect(snapshotKeys == ["profiles", "activeID", "language"], "Snapshot contains only the keyboard list, selection and language")
         let reopenedApp = MobileSettingsStore(snapshotURL: snapshot, defaults: defaults)
         try! reopenedApp.save(.standard)
         expect(reader.current == MobileKeyboardSettings(input: .grid4x8, output: .quocNgu), "Typing uses its cached snapshot without polling app settings")
