@@ -23,6 +23,8 @@ fi
 mkdir -p "$HOME/Library/Input Methods"
 # Stop only this input method during an update; never restart system services.
 /usr/bin/pkill -x VietMoi 2>/dev/null || true
+# Replace the bundle: ditto merges, and files left from an older build break the code signature.
+rm -rf "$DESTINATION"
 /usr/bin/ditto "$SOURCE" "$DESTINATION"
 /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "$DESTINATION"
 "$PROJECT_ROOT/build/input-source" register "$DESTINATION" > /dev/null
