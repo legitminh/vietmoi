@@ -17,6 +17,8 @@ android {
     }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
     sourceSets.getByName("main").jniLibs.srcDir(rootProject.projectDir.parentFile.resolve("build/android-native"))
+    // The shared UI (scripts/build-web.py) ships as assets/WebApp.
+    sourceSets.getByName("main").assets.srcDir(layout.buildDirectory.dir("shared-ui"))
     packaging { jniLibs { useLegacyPackaging = false } }
 }
 
@@ -24,7 +26,11 @@ val buildSwift by tasks.registering(Exec::class) {
     workingDir(rootProject.projectDir.parentFile)
     commandLine("python3", "scripts/build-android-native.py")
 }
-tasks.named("preBuild").configure { dependsOn(buildSwift) }
+val copySharedUI by tasks.registering(Sync::class) {
+    from(rootProject.projectDir.parentFile.resolve("Resources/WebApp"))
+    into(layout.buildDirectory.dir("shared-ui/WebApp"))
+}
+tasks.named("preBuild").configure { dependsOn(buildSwift, copySharedUI) }
 
 dependencies {
     androidTestImplementation("androidx.test:runner:1.7.0")

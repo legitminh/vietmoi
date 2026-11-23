@@ -37,8 +37,13 @@ import Foundation
     // App/extension-local preferences keep mode across text fields and
     // controller recreation without writing to the read-only App Group snapshot.
     private let defaults: UserDefaults
-    private static let asciiModeKey = "mobile.asciiMode.v1"
+    // The keyboard's current list position. A Shift tap moves it without writing
+    // the app's snapshot; a new selection made in the app is adopted.
+    private static let activeKey = "mobile.activeKeyboard.v1"
+    private static let seenKey = "mobile.appActiveKeyboard.v1"
+    private static let legacyASCIIKey = "mobile.asciiMode.v1"
     private var settings: MobileKeyboardSettings
+    private(set) var profile: KeyboardProfile
     private var recentCommit: String?
     private var engine: KeyboardEngine
     private var expected: Position?
@@ -50,7 +55,7 @@ import Foundation
     private var editing = false
     var onChange: (() -> Void)?
     var output: OutputType { engine.outputType }
-    var input: InputType { settings.input }
+    var input: InputType { profile.isLiteral ? .asciiPlus : profile.inputType }
     var rows: [[ASCIIKey]] {
         guard input == .grid4x8 && !ascii else { return ASCIIKeyboardLayout.guideRows }
         return stride(from: 0, to: GridKey.all.count, by: 8).map { start in
@@ -67,20 +72,62 @@ import Foundation
         self.document = document
         self.defaults = defaults
         self.settingsProvider = settingsProvider
-        settings = settingsProvider().supported
-        engine = KeyboardEngine(outputType: settings.output, ascii: defaults.bool(forKey: Self.asciiModeKey))
+        let initial = settingsProvider().supported
+        settings = initial
+        profile = Self.resolve(initial, defaults: defaults)
+        engine = KeyboardEngine(outputType: profile.outputType, ascii: profile.isLiteral)
+    }
+    private static func resolve(_ settings: MobileKeyboardSettings, defaults: UserDefaults) -> KeyboardProfile {
+        let appActive = settings.activeID.uuidString
+        if defaults.string(forKey: seenKey) != appActive {
+            defaults.set(appActive, forKey: seenKey)
+            // Older keyboards kept only a literal ASCII flag; keep its mode once.
+            if defaults.string(forKey: activeKey) == nil, defaults.bool(forKey: legacyASCIIKey),
+               let english = settings.profiles.first(where: { $0.isLiteral }) {
+                defaults.set(english.id.uuidString, forKey: activeKey)
+                return english
+            }
+            defaults.set(appActive, forKey: activeKey)
+            return settings.active
+        }
+        let local = defaults.string(forKey: activeKey).flatMap(UUID.init(uuidString:))
+        return settings.profiles.first { $0.id == local } ?? settings.active
     }
     func reloadSettings() {
         guard !engine.isPending else { return }
         let latest = settingsProvider().supported
         guard latest != settings else { return }
         settings = latest
-        engine = KeyboardEngine(outputType: latest.output, ascii: engine.ascii)
+        useProfile(Self.resolve(latest, defaults: defaults))
+    }
+    private func useProfile(_ next: KeyboardProfile) {
+        guard next != profile || engine.ascii != next.isLiteral || engine.outputType != next.outputType else { return }
+        profile = next
+        engine = KeyboardEngine(outputType: next.outputType, ascii: next.isLiteral)
         recentCommit = nil
         onChange?()
     }
+    /// The keyboard a Shift tap moves to.
+    var nextProfile: KeyboardProfile {
+        let index = settings.profiles.firstIndex { $0.id == profile.id } ?? -1
+        return settings.profiles[(index + 1) % settings.profiles.count]
+    }
+    func selectPreviousKeyboard() {
+        edit {
+            let index = settings.profiles.firstIndex { $0.id == profile.id } ?? 0
+            select(settings.profiles[(index - 1 + settings.profiles.count) % settings.profiles.count])
+        }
+    }
+    private func selectNextKeyboard() { select(nextProfile) }
+    private func select(_ next: KeyboardProfile) {
+        apply(engine.finishPartial())
+        defaults.set(next.id.uuidString, forKey: Self.activeKey)
+        profile = next
+        engine = KeyboardEngine(outputType: next.outputType, ascii: next.isLiteral)
+        recentCommit = nil
+    }
     func label(for key: ASCIIKey) -> String? {
-        if key.keyCode == 56 { return ascii ? "VIỆT" : "ABC" }
+        if key.keyCode == 56 { return nextProfile.isLiteral ? "ABC" : "VIỆT" }
         if ascii { return key.label }
         if input == .grid4x8 {
             guard let index = GridKey.index(keyCode: key.keyCode) else { return nil }
@@ -92,15 +139,14 @@ import Foundation
         return engine.componentLabel(choice)
     }
     func accessibilityLabel(for key: ASCIIKey) -> String {
-        if key.keyCode == 56 { return AppCopy.text(ascii ? "switchVietnamese" : "switchAscii") }
+        if key.keyCode == 56 { return AppCopy.text("nextKeyboard") }
         let action = input == .grid4x8 ? (label(for: key) ?? AppCopy.text("unavailable")) : (ASCIIPlusMapping.actions(for: engine)[key.keyCode] ?? AppCopy.text("unavailable"))
         return ascii ? key.label : "\(key.label): \(action == "Clear" ? AppCopy.text("clear") : action)"
     }
     func press(_ key: ASCIIKey, letterCase: MobileLetterCase = .lowercase) {
         edit {
             if key.keyCode == 56 {
-                apply(engine.press(24))
-                defaults.set(engine.ascii, forKey: Self.asciiModeKey)
+                selectNextKeyboard()
                 return
             }
             if engine.ascii {

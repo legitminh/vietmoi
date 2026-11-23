@@ -79,8 +79,8 @@ var physicalKeys: Set<UInt16> = []
 var persistentASCII = false
 let controller = InputSession(showGuide: false, profileProvider: { testProfile }, shiftTapThreshold: { tapThreshold },
                               keyIsDown: { physicalKeys.contains($0) },
-                              asciiMode: { persistentASCII },
-                              setASCIIMode: { persistentASCII = $0 })
+                              literalMode: { persistentASCII },
+                              nextKeyboard: { persistentASCII.toggle() })
 @discardableResult func press(_ key: UInt16, characters: String = "", flags: NSEvent.ModifierFlags = [], type: NSEvent.EventType = .keyDown, at time: TimeInterval? = nil, autoRelease: Bool = true, isRepeat: Bool = false) -> Bool {
     eventTime = time ?? eventTime + 0.01
     if type == .flagsChanged && [56,60].contains(key) {

@@ -18,5 +18,5 @@
     <item name="test_editor" type="id" /><item name="second_editor" type="id" />
     <item name="settings_tab" type="id" /><item name="practice_tab" type="id" />
     <item name="input_selector" type="id" /><item name="output_selector" type="id" />
-    <item name="language_selector" type="id" />
+    <item name="language_selector" type="id" /><item name="shared_app" type="id" />
 </resources>

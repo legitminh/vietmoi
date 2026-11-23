@@ -2,11 +2,8 @@ import AppKit
 import InputMethodKit
 import os
 
-// InputMethodKit may create a controller for each text client. Literal ASCII is
-// an input-method mode, not document state, so share it across those clients.
-private enum ProcessInputMode {
-    static var ascii = false
-}
+// InputMethodKit may create a controller for each text client. The selected
+// keyboard is shared app state (KeyboardProfiles), not document state.
 
 @objc(VietMoiInputController)
 final class VietMoiInputController: IMKInputController {
@@ -43,22 +40,24 @@ final class InputSession {
     private let profileProvider: () -> KeyboardProfile
     private let shiftTapThreshold: () -> TimeInterval
     private let keyIsDown: (UInt16) -> Bool
-    private let asciiMode: () -> Bool
-    private let setASCIIMode: (Bool) -> Void
+    private let literalMode: () -> Bool
+    private let nextKeyboard: () -> Void
     private var currentProfile: KeyboardProfile?
     init(showGuide: Bool = true, profileProvider: @escaping () -> KeyboardProfile = { KeyboardProfiles.shared.active },
          shiftTapThreshold: @escaping () -> TimeInterval = { KeyboardPreferences.shared.shiftTapSeconds },
          // The combined table includes synthetic/TSM events: selection deletion can
          // leave Delete logically down there long after the hardware released it.
          keyIsDown: @escaping (UInt16) -> Bool = { CGEventSource.keyState(.hidSystemState, key: $0) },
-         asciiMode: @escaping () -> Bool = { ProcessInputMode.ascii },
-         setASCIIMode: @escaping (Bool) -> Void = { ProcessInputMode.ascii = $0 }) {
+         // An English keyboard types literal text through the engine's literal mode.
+         literalMode: @escaping () -> Bool = { KeyboardProfiles.shared.active.isLiteral },
+         // A left Shift tap moves to the next keyboard in the list.
+         nextKeyboard: @escaping () -> Void = { KeyboardProfiles.shared.selectNext() }) {
         self.showGuide = showGuide
         self.profileProvider = profileProvider
         self.shiftTapThreshold = shiftTapThreshold
         self.keyIsDown = keyIsDown
-        self.asciiMode = asciiMode
-        self.setASCIIMode = setASCIIMode
+        self.literalMode = literalMode
+        self.nextKeyboard = nextKeyboard
     }
     private var engine = KeyboardEngine()
     private var history: [CommittedCycle] = []
@@ -83,7 +82,7 @@ final class InputSession {
     func activateServer(_ sender: Any!) {
         traceShift("activate", sender: sender)
         currentProfile = profileProvider()
-        engine = KeyboardEngine(outputType: currentProfile!.outputType, ascii: asciiMode())
+        engine = KeyboardEngine(outputType: currentProfile!.outputType, ascii: literalMode())
         history.removeAll()
         origin = nil
         expectedSelection = nil
@@ -370,9 +369,10 @@ final class InputSession {
                            isolated: event.keyCode == 56 && !otherModifiers && !rightShiftDown, isKeyDown: keyIsDown)
         } else if !leftShiftDown && wasLeftDown {
             if shiftTap.release(at: event.timestamp) {
-                let effect = engine.press(24)
-                setASCIIMode(engine.ascii)
-                apply(effect, sender: sender)
+                apply(engine.finishPartial(), sender: sender)
+                nextKeyboard()
+                currentProfile = profileProvider()
+                engine = KeyboardEngine(outputType: currentProfile!.outputType, ascii: literalMode())
                 refresh(sender)
             }
         }
@@ -390,7 +390,7 @@ final class InputSession {
         guard profile != currentProfile else { return }
         apply(engine.cancel(), sender: sender)
         shiftTap.interrupt()
-        engine = KeyboardEngine(outputType: profile.outputType, ascii: engine.ascii)
+        engine = KeyboardEngine(outputType: profile.outputType, ascii: literalMode())
         history.removeAll()
         currentProfile = profile
     }

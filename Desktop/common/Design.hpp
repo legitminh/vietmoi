@@ -32,7 +32,7 @@ inline constexpr Copy copy[] = {
     {"addKeyboard", "Thêm bàn phím", "Add keyboard"},
     {"roundHelp", "Âm đầu → âm đệm + âm chính → âm cuối → thanh, rồi dấu cách. Quốc ngữ chuyển âm tiết hoàn chỉnh sang cách viết chuẩn; phần chưa xong giữ nguyên dạng phiên âm.", "Initial → onglide + core vowel → final → tone, then a space. Quốc ngữ converts completed words to standard Vietnamese; unfinished text stays phonetic."},
     {"shiftLimit", "Thời gian nhấn Shift trái", "Left Shift tap limit"},
-    {"shiftLimitHelp", "Nhấn riêng để đổi chế độ. Giữ hoặc kết hợp phím khác để dùng Shift bình thường.", "Tap alone to switch modes. Hold or use with another key for normal Shift."},
+    {"shiftLimitHelp", "Chạm riêng để chuyển sang bàn phím tiếp theo. Giữ hoặc dùng cùng phím khác để dùng Shift bình thường.", "Tap alone to switch to the next keyboard. Hold or use with another key for normal Shift."},
     {"shiftLimitError", "Nhập từ 0,01 đến 5 giây. Giá trị cũ vẫn được giữ.", "Enter 0.01–5 seconds. Your previous value was kept."},
     {"seconds", "giây", "seconds"},
     {"reset", "Đặt lại", "Reset"},
@@ -101,6 +101,18 @@ inline constexpr Copy copy[] = {
     {"installWindowsRegistrationFailed", "Đăng ký TSF không thành công. Kiểm tra quyền quản trị và kiến trúc của PowerShell cùng gói cài đặt.", "TSF registration failed. Check administrator access and matching PowerShell/package architectures."},
     {"installWindowsRegistered", "Đã đăng ký. Chọn siêu việt bằng Win+Space. Mở SieuvietSettings.exe để cài đặt và gõ thử. Dùng -Language en để xem hướng dẫn cài bằng tiếng Anh.", "Registered. Select siêu việt with Win+Space. Open SieuvietSettings.exe for settings and practice. Use -Language vi for Vietnamese installation messages."},
     {"installWindowsRemoved", "Đã gỡ đăng ký siêu việt. Cài đặt cá nhân vẫn được giữ.", "siêu việt registration was removed. Personal settings were preserved."},
+    {"keyboardLanguage", "Ngôn ngữ", "Language"},
+    {"languageProfile", "Ngôn ngữ của {name}", "Language for {name}"},
+    {"englishKeyboard", "English", "English"},
+    {"literalOutput", "nguyên dạng", "literal"},
+    {"keyboardsHeading", "Bàn phím", "Keyboards"},
+    {"keyboardsHelp", "Chạm Shift trái để chuyển sang bàn phím tiếp theo trong danh sách.", "Tap left Shift to move to the next keyboard in this list."},
+    {"pageIntro", "giới thiệu", "intro"},
+    {"pageKeyboards", "bàn phím", "keyboards"},
+    {"pageTry", "thử", "try"},
+    {"typingWith", "Đang gõ: {name}", "Typing with {name}"},
+    {"tryHelp", "Gõ bằng bàn phím thật hoặc bàn phím ảo. Chạm Shift để chuyển bàn phím. Esc để thoát.", "Type with your keyboard or the on-screen one. Tap Shift to switch keyboards. Esc exits."},
+    {"startTyping", "Bắt đầu gõ", "Start typing"},
 };
 inline std::string text(std::string_view key, const std::string &language = "vi") {
     for (const auto &entry : copy) if (entry.key == key) return language == "en" ? entry.en : entry.vi;

@@ -7,6 +7,7 @@ final class KeyboardProfiles {
         var profiles: [KeyboardProfile]
         var activeID: UUID
     }
+    private let listKey = "keyboardProfiles.languages.v1"
     private let defaults: UserDefaults
     private let storageKey = "keyboardProfiles.v1"
     private var state: State
@@ -23,10 +24,46 @@ final class KeyboardProfiles {
            let saved = try? JSONDecoder().decode(State.self, from: data), !saved.profiles.isEmpty {
             state = saved
             if !saved.profiles.contains(where: { $0.id == saved.activeID }) { state.activeID = saved.profiles[0].id }
+            // Before keyboards had languages, a Shift tap toggled literal ASCII. Keep
+            // that reachable once by listing an English keyboard after the old ones.
+            if !defaults.bool(forKey: listKey) && !state.profiles.contains(where: { $0.language == .english }) {
+                state.profiles.append(.makeEnglish())
+            }
         } else {
-            let profile = KeyboardProfile.makeDefault()
-            state = State(profiles: [profile], activeID: profile.id)
+            let profiles = KeyboardProfile.makeDefaultList()
+            state = State(profiles: profiles, activeID: profiles[0].id)
         }
+        defaults.set(true, forKey: listKey)
+    }
+    /// A left Shift tap moves to the next keyboard, wrapping to the first.
+    func selectNext() {
+        guard let index = state.profiles.firstIndex(where: { $0.id == state.activeID }) else { return }
+        select(state.profiles[(index + 1) % state.profiles.count].id)
+    }
+    func setLanguage(_ language: KeyboardLanguage, for id: UUID) {
+        guard let index = state.profiles.firstIndex(where: { $0.id == id }) else { return }
+        state.profiles[index].language = language
+        state.profiles[index].normalize()
+        save()
+    }
+    /// The keyboard list in the shared settings UI's schema; the host adds its own preferences.
+    func sharedState() -> [String: Any] {
+        let profiles = (try? JSONSerialization.jsonObject(with: JSONEncoder().encode(state.profiles))) as? [[String: Any]] ?? []
+        return ["profiles": profiles.map { $0.filter { $0.key != "asciiPlusKeymap" } }, "activeID": state.activeID.uuidString]
+    }
+    /// Apply a list written by the shared settings UI. Custom keymaps stay with their keyboards.
+    func applySharedState(_ value: [String: Any]) {
+        if let list = value["profiles"], let data = try? JSONSerialization.data(withJSONObject: list),
+           var profiles = try? JSONDecoder().decode([KeyboardProfile].self, from: data), !profiles.isEmpty {
+            for index in profiles.indices {
+                profiles[index].asciiPlusKeymap = state.profiles.first { $0.id == profiles[index].id }?.asciiPlusKeymap
+            }
+            state.profiles = profiles
+        }
+        if let text = value["activeID"] as? String, let id = UUID(uuidString: text), state.profiles.contains(where: { $0.id == id }) {
+            state.activeID = id
+        } else if !state.profiles.contains(where: { $0.id == state.activeID }) { state.activeID = state.profiles[0].id }
+        save()
     }
     @discardableResult func add() -> UUID {
         var number = 2
@@ -51,6 +88,7 @@ final class KeyboardProfiles {
         guard let index = state.profiles.firstIndex(where: { $0.id == id }) else { return }
         if let input = input { state.profiles[index].inputType = input }
         if let output = output { state.profiles[index].outputType = output }
+        state.profiles[index].normalize()
         if let showVirtualKeyboard = showVirtualKeyboard { state.profiles[index].showVirtualKeyboard = showVirtualKeyboard }
         save()
     }

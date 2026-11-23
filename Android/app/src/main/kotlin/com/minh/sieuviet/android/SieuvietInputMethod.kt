@@ -10,8 +10,39 @@ import android.view.inputmethod.InputMethodManager
 class SieuvietInputMethod : InputMethodService() {
     private var session: EditorSession? = null
     private var surface: KeyboardView? = null
-    private var asciiMode = false
     private var forcedAscii = false
+    private var attribute: EditorInfo? = null
+    private var settings = KeyboardSettings()
+    // The IME's current list position. A Shift tap moves it without writing the
+    // app's snapshot; a new selection made in the app is adopted.
+    private val local by lazy { getSharedPreferences("ime-keyboard", MODE_PRIVATE) }
+    private fun resolve(): KeyboardProfile {
+        val appActive = settings.activeId
+        if (local.getString("seen", null) != appActive) {
+            local.edit().putString("seen", appActive).putString("active", appActive).apply()
+            return settings.active
+        }
+        val id = local.getString("active", null)
+        return settings.profiles.firstOrNull { it.id == id } ?: settings.active
+    }
+    private fun open(profile: KeyboardProfile, start: Int, end: Int) {
+        val connection = currentInputConnection ?: return
+        val info = attribute ?: return
+        session = EditorSession(connection, profile, info, profile.literal || forcedAscii, start, end).also { current ->
+            current.onChange = { surface?.render() }
+            if (!forcedAscii) current.onNextKeyboard = { switchTo(settings.next(current.profile.id)) }
+        }
+    }
+    /** Replace the session with another keyboard's, keeping the caret. */
+    fun switchTo(profile: KeyboardProfile) {
+        val old = session ?: return
+        local.edit().putString("active", profile.id).apply()
+        val start = old.observedStart; val end = old.observedEnd
+        old.close(); session = null
+        open(profile, start, end)
+        surface?.render()
+    }
+    fun previousKeyboard() { session?.let { it.finish(); switchTo(settings.previous(it.profile.id)) } }
     override fun onEvaluateFullscreenMode() = false
     override fun onEvaluateInputViewShown(): Boolean { super.onEvaluateInputViewShown(); return true }
 
@@ -27,9 +58,9 @@ class SieuvietInputMethod : InputMethodService() {
         val numeric = attribute.inputType and InputType.TYPE_MASK_CLASS in listOf(InputType.TYPE_CLASS_NUMBER, InputType.TYPE_CLASS_PHONE)
         val password = variation in listOf(InputType.TYPE_TEXT_VARIATION_PASSWORD, InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD, InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD)
         forcedAscii = numeric || password
-        session = EditorSession(connection, SettingsStore(this).load(), attribute, asciiMode || forcedAscii).also { current ->
-            current.onChange = { if (!forcedAscii) asciiMode = current.state.getBoolean("ascii"); surface?.render() }
-        }
+        this.attribute = attribute
+        settings = SettingsStore(this).load()
+        open(resolve(), attribute.initialSelStart, attribute.initialSelEnd)
         surface?.resetPresentation(numeric)
     }
     override fun onStartInputView(info: EditorInfo, restarting: Boolean) { super.onStartInputView(info, restarting); surface?.render() }
@@ -37,7 +68,7 @@ class SieuvietInputMethod : InputMethodService() {
         session?.finish(); surface?.stopRepeating(); super.onFinishInputView(finishingInput)
     }
     override fun onFinishInput() {
-        session?.finish(); session?.let { if (!forcedAscii) asciiMode = it.state.getBoolean("ascii") }; session?.close(); session = null
+        session?.finish(); session?.close(); session = null
         super.onFinishInput()
     }
     override fun onUpdateSelection(oldSelStart: Int, oldSelEnd: Int, newSelStart: Int, newSelEnd: Int, candidatesStart: Int, candidatesEnd: Int) {

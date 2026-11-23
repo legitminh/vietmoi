@@ -3,9 +3,10 @@ set -euo pipefail
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 mkdir -p "$PROJECT_ROOT/build/module-cache"
 xcrun swiftc -swift-version 5 -module-cache-path "$PROJECT_ROOT/build/module-cache" \
-  -framework AppKit -framework InputMethodKit -framework Carbon \
+  -framework AppKit -framework InputMethodKit -framework Carbon -framework WebKit \
   "$PROJECT_ROOT"/Sources/Core/*.swift \
   "$PROJECT_ROOT"/Sources/Presentation/*.swift \
+  "$PROJECT_ROOT"/Sources/AppShell/*.swift \
   "$PROJECT_ROOT/Sources/macOS/KeyboardPanel.swift" \
   "$PROJECT_ROOT/Sources/macOS/ASCIIKeyboardView.swift" \
   "$PROJECT_ROOT/Sources/macOS/SettingsWindow.swift" \

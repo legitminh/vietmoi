@@ -7,18 +7,21 @@ import org.json.JSONObject
 import kotlin.math.min
 
 /** Android document mechanics only. Construction, key choices and guide labels are Swift. */
-class EditorSession(private val connection: InputConnection, val settings: KeyboardSettings,
-                    private val info: EditorInfo, ascii: Boolean = false) : AutoCloseable {
-    private val engine = NativeEngine(settings.output, settings.input)
+class EditorSession(private val connection: InputConnection, val profile: KeyboardProfile,
+                    private val info: EditorInfo, ascii: Boolean = false,
+                    start: Int = info.initialSelStart, end: Int = info.initialSelEnd) : AutoCloseable {
+    private val engine = NativeEngine(profile.output, profile.input)
+    /** A Shift tap or the mode key moves to the next keyboard; the owner replaces this session. */
+    var onNextKeyboard: (() -> Unit)? = null
     val state: JSONObject get() = engine.state
     var onChange: (() -> Unit)? = null
     private var marked = false
     private var markText = ""
     private var originalSelection: String? = ""
-    private var origin = min(info.initialSelStart, info.initialSelEnd)
-    private var expected = info.initialSelEnd
-    private var observedStart = info.initialSelStart
-    private var observedEnd = info.initialSelEnd
+    private var origin = min(start, end)
+    private var expected = end
+    var observedStart = start; private set
+    var observedEnd = end; private set
     private var editing = false
     private var recentCommit: String? = null
     private var closed = false
@@ -27,6 +30,8 @@ class EditorSession(private val connection: InputConnection, val settings: Keybo
 
     fun command(command: Int, argument: Int = 0): Boolean {
         if (closed) return false
+        val next = onNextKeyboard
+        if (command == NativeEngine.TOGGLE && next != null) { finish(); next(); return true }
         val before = state
         if (!before.getBoolean("pending") && (command == NativeEngine.KEY || command == NativeEngine.COMPONENT)) {
             origin = min(observedStart, observedEnd)

@@ -198,8 +198,13 @@ final class KeyboardSurfaceView: UIInputView {
         }, for: .touchDown)
         button.addAction(UIAction { [weak self] _ in
             guard let self = self else { return }
+            let wasLocked = self.shift.capsLock
             self.shift.end(at: ProcessInfo.processInfo.systemUptime)
-            if self.shift.takeModeTap() { self.session.press(ASCIIKey(label: "Shift", keyCode: 56)) }
+            if self.shift.takeModeTap() {
+                // A double tap enables Caps Lock and returns to the keyboard chosen before its first tap.
+                if self.shift.capsLock && !wasLocked { self.session.selectPreviousKeyboard() }
+                else { self.session.press(ASCIIKey(label: "Shift", keyCode: 56)) }
+            }
             self.render()
         }, for: [.touchUpInside, .touchUpOutside])
         button.addAction(UIAction { [weak self] _ in

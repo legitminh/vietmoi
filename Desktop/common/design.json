@@ -166,8 +166,8 @@
       "en": "Left Shift tap limit"
     },
     "shiftLimitHelp": {
-      "vi": "Nhấn riêng để đổi chế độ. Giữ hoặc kết hợp phím khác để dùng Shift bình thường.",
-      "en": "Tap alone to switch modes. Hold or use with another key for normal Shift."
+      "vi": "Chạm riêng để chuyển sang bàn phím tiếp theo. Giữ hoặc dùng cùng phím khác để dùng Shift bình thường.",
+      "en": "Tap alone to switch to the next keyboard. Hold or use with another key for normal Shift."
     },
     "shiftLimitError": {
       "vi": "Nhập từ 0,01 đến 5 giây. Giá trị cũ vẫn được giữ.",
@@ -440,6 +440,54 @@
     "installWindowsRemoved": {
       "vi": "Đã gỡ đăng ký siêu việt. Cài đặt cá nhân vẫn được giữ.",
       "en": "siêu việt registration was removed. Personal settings were preserved."
+    },
+    "keyboardLanguage": {
+      "vi": "Ngôn ngữ",
+      "en": "Language"
+    },
+    "languageProfile": {
+      "vi": "Ngôn ngữ của {name}",
+      "en": "Language for {name}"
+    },
+    "englishKeyboard": {
+      "vi": "English",
+      "en": "English"
+    },
+    "literalOutput": {
+      "vi": "nguyên dạng",
+      "en": "literal"
+    },
+    "keyboardsHeading": {
+      "vi": "Bàn phím",
+      "en": "Keyboards"
+    },
+    "keyboardsHelp": {
+      "vi": "Chạm Shift trái để chuyển sang bàn phím tiếp theo trong danh sách.",
+      "en": "Tap left Shift to move to the next keyboard in this list."
+    },
+    "pageIntro": {
+      "vi": "giới thiệu",
+      "en": "intro"
+    },
+    "pageKeyboards": {
+      "vi": "bàn phím",
+      "en": "keyboards"
+    },
+    "pageTry": {
+      "vi": "thử",
+      "en": "try"
+    },
+    "typingWith": {
+      "vi": "Đang gõ: {name}",
+      "en": "Typing with {name}"
+    },
+    "tryHelp": {
+      "vi": "Gõ bằng bàn phím thật hoặc bàn phím ảo. Chạm Shift để chuyển bàn phím. Esc để thoát.",
+      "en": "Type with your keyboard or the on-screen one. Tap Shift to switch keyboards. Esc exits."
+    },
+    "startTyping": {
+      "vi": "Bắt đầu gõ",
+      "en": "Start typing"
     }
   }
 }

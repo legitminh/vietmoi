@@ -10,16 +10,29 @@ func check(_ condition: @autoclosure () -> Bool, _ message: String) {
 }
 let store = KeyboardProfiles(defaults: defaults)
 let original = store.active
-check(store.profiles.count == 1 && original.name == "Default keyboard", "First launch must create the default keyboard")
+check(store.profiles.count == 2 && original.name == "Default keyboard", "First launch must create the default keyboard")
+check(store.profiles[1].language == .english && store.profiles[1].inputType == .qwerty && store.profiles[1].outputType == .literal,
+      "First launch lists an English keyboard after the default, reached by a Shift tap")
+store.selectNext()
+check(store.active.language == .english, "A Shift tap moves to the next keyboard")
+store.selectNext()
+check(store.active.id == original.id, "Shift cycling wraps to the first keyboard")
+store.remove(store.profiles[1].id)
 check(original.inputType == .grid4x8 && original.outputType == .sieuviet, "Default configuration must preserve current typing")
 check(original.showVirtualKeyboard, "Existing and new keyboards show the guide by default")
 let second = store.add()
-store.update(second, input: .telex, output: .quocNgu, showVirtualKeyboard: false)
+store.update(second, input: .asciiPlus, output: .quocNgu, showVirtualKeyboard: false)
 store.select(second)
 store.hasOpenedSetup = true
 let restored = KeyboardProfiles(defaults: defaults)
 check(restored.profiles.count == 2 && restored.active.id == second, "Profiles and selected keyboard must survive store recreation")
-check(restored.active.inputType == .telex && restored.active.outputType == .quocNgu, "Both dropdowns must persist independently")
+check(restored.active.inputType == .asciiPlus && restored.active.outputType == .quocNgu, "Both dropdowns must persist independently")
+restored.update(second, input: .telex, output: .literal)
+check(restored.active.inputType == .asciiPlus && restored.active.outputType == .sieuviet, "Vietnamese keyboards only allow their own inputs and outputs")
+restored.setLanguage(.english, for: second)
+check(restored.active.inputType == .qwerty && restored.active.outputType == .literal, "Changing language picks that language's defaults")
+restored.setLanguage(.vietnamese, for: second)
+restored.update(second, output: .quocNgu, showVirtualKeyboard: false)
 check(!restored.active.showVirtualKeyboard && restored.profiles[0].showVirtualKeyboard, "Guide visibility must persist separately for each profile")
 check(restored.hasOpenedSetup, "First-launch setup state must persist")
 restored.remove(second)
@@ -31,13 +44,20 @@ check(third != original.id && third != second, "New profiles must have stable di
 restored.update(third, input: .asciiPlus)
 check(KeyboardProfiles(defaults: defaults).profiles.last?.inputType == .asciiPlus, "ascii+ must be saved without changing its name")
 defaults.set(Data("broken config".utf8), forKey: "keyboardProfiles.v1")
-check(KeyboardProfiles(defaults: defaults).profiles.count == 1, "Unreadable preferences must recover to a usable default")
+check(KeyboardProfiles(defaults: defaults).profiles.count == 2, "Unreadable preferences must recover to a usable default")
 let legacy: [String: Any] = [
     "profiles": [["id": original.id.uuidString, "name": "Existing keyboard", "inputType": "ascii+", "outputType": "vietmoi"]],
     "activeID": original.id.uuidString
 ]
 defaults.set(try JSONSerialization.data(withJSONObject: legacy), forKey: "keyboardProfiles.v1")
+defaults.removeObject(forKey: "keyboardProfiles.languages.v1")
 let migrated = KeyboardProfiles(defaults: defaults)
+check(migrated.profiles.count == 2 && migrated.profiles[1].language == .english, "Old lists gain an English keyboard once, replacing the old ASCII toggle")
+migrated.remove(migrated.profiles[1].id)
+check(KeyboardProfiles(defaults: defaults).profiles.count == 1, "A removed English keyboard is not added back")
+let shared = migrated.sharedState()
+check((shared["profiles"] as? [[String: Any]])?.first?["language"] as? String == "vi" && shared["activeID"] as? String == original.id.uuidString,
+      "The shared settings UI receives the keyboard list")
 check(migrated.active.name == "Existing keyboard" && migrated.active.inputType == .asciiPlus && migrated.active.showVirtualKeyboard,
       "Old preferences must preserve the keyboard and default guide visibility to on")
 check(migrated.active.outputType == .sieuviet, "Legacy vietmoi profiles migrate to Sieuviet")
