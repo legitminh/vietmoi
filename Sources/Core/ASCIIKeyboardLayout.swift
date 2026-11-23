@@ -1,5 +1,10 @@
 import Foundation
 
+enum TouchKeyboardSymbols {
+    static let pages = [["1234567890", "-/:;()$&@\"", ".,?!'[]_"],
+                        ["[]{}#%^*+=", "\\|~<>`_\"':", "!?@&$()-"]]
+}
+
 struct ASCIIKey {
     let label: String
     let keyCode: UInt16
@@ -42,6 +47,16 @@ enum ASCIIKeyboardLayout {
          ASCIIKey(label: "Space", keyCode: 49, units: 10),
          ASCIIKey(label: "Fn⌫", keyCode: 117, units: 2.25)]
     ]
+    // The compact guide is shared by the Mac panel and the iPhone touch keyboard.
+    // Columns align: a below q, semicolon below p, and the mode key below q.
+    static let guideRows: [[ASCIIKey]] = {
+        var result = rows.map { row in
+            row.filter { $0.label.count == 1 && ("a"..."z").contains($0.label) }
+        }.filter { !$0.isEmpty }
+        result[1].append(ASCIIKey(label: ";", keyCode: 41))
+        result[2].insert(ASCIIKey(label: "Shift", keyCode: 56), at: 0)
+        return result
+    }()
     static let keys = rows.flatMap { $0 }
     static let keyCodesByLabel: [String: UInt16] = Dictionary(
         keys.filter { $0.label.count == 1 }.map { ($0.label, $0.keyCode) },

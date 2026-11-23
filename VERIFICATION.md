@@ -1,4 +1,48 @@
-# MVP verification — October 29, 2026
+# MVP verification — November 23, 2026
+
+## Version 0.15.1 — suggestion-strip overlap
+
+- Reproduced the attached visual issue with completion enabled: the suggestion bar ended 35 points below the top of the first key row. Added an interface regression that failed before the fix.
+- Initialize the input view with the suggestion strip's height included, keep its preferred frame height in sync when settings or orientation change, and reserve a separate strip in layout even while iOS supplies an older height. Key rows and footer fit the remaining height instead of overlapping suggestions.
+- Visually inspected the repaired portrait screenshot. The four responsive interface tests pass, including suggestion/key separation in portrait, landscape, and symbols, plus Chinese conversion, sliding, and vertical cursor movement. Mobile (112), hit/completion/cursor (7,382), and Mac controller (303) checks pass.
+- Avoid repeatedly notifying iOS of an unchanged primary keyboard language during text and prediction callbacks. Cache the language sent to the host rather than comparing with UIKit's returned/normalized value; the actual system keyboard extension regression now passes in portrait and landscape (17.7 seconds).
+
+## Version 0.15.0 — multilingual completion and responsive touch keyboard
+
+- Reconciled this workspace with the newer 0.14.0 Mac/shared/iOS source, retaining the current siêu việt phonetic basis, custom atom maps, bilingual interface, and InputMethodKit editing fixes. Visible app and custom input/output labels are **siêu việt**; compatibility identifiers and the canonical input-method path remain unchanged.
+- Mac and iOS settings select the keyboard language first and expose only compatible input/output options. English, Vietnamese, and Chinese completion choices persist independently. Exact Chinese conversion remains enabled with completion off. The Chinese Mac guide has a separate visibility checkbox.
+- Suggestion computation runs on cancellable background operations. Typing and highlights finish before prediction results; context tokens reject stale replies. Chinese phrase completion binary-searches code prefixes and caches at most 64 recent prefixes. Mobile editor context is bounded.
+- Keys use neutral colors. Mobile hit testing partitions gutters/margins among enabled keys. Letter/symbol entry commits on release, offers a larger popup, and supports sliding to another text key. Utility-key tracking and Delete repeat are retained. The spacebar trackpad moves in two axes; the editor uses visual-line navigation and other apps use the line-break context exposed by iOS's document proxy.
+- Checks passed: 303 native controller; 49 profile/migration; 47 Shuangpin; 112 mobile document/session; 7,382 hit coverage, English, cursor, and scheduling; 164,794 siêu việt engine; 41,279 ASCII+; 123,737 quốc ngữ; 27 Shift timing. All three final simulator UI tests pass: Chinese conversion/language filtering, gutter taps/sliding, and up/down spacebar navigation.
+- Signed and installed 0.15.0 (42) on the connected iPhone 14; CoreDevice reports the app as **siêu việt**, and launch succeeded. Rebuilt and installed the Mac app, checked strict signing, compared the executable and source fingerprint, and verified only the canonical installed VietMoi executable is running.
+- Purged 27 obsolete bundles/build directories/preview artifacts and 13 obsolete release outputs/archives from the older project copy and this workspace. Also removed remaining obsolete compiled test/cross-platform outputs and build caches. Preserved source projects and external toolchain caches. A follow-up app inventory found only version 0.15.0, named siêu việt, with the single Applications launcher pointing to the canonical installation.
+
+## Version 0.8.0 keyboard cycling and Microsoft Shuangpin
+
+- Short isolated Left Shift taps select the next saved keyboard, wrapping in list order. English, Vietnamese, and Chinese are separate profiles; the selected profile persists across fields and relaunch. Upgrade migration preserves existing profiles and adds missing language keyboards once.
+- Chinese uses Microsoft Shuangpin physical keys and the bundled Rime simplified Pinyin dictionary. Tests cover common phrases, zero initials, zh/ch/sh, ü aliases, semicolon/ing, candidate navigation and paging, raw Return, Backspace, cancellation, and sentence fallback.
+- Each Chinese profile has its own persisted **Show virtual keyboard** preference. Rendered and visually inspected both the complete Shuangpin guide and the candidates-only popup with the guide hidden. Candidate selection stays available in either setting. The switch key now shows a globe.
+- Checks passed: 24 profiles/migration/visibility; 43 Shuangpin; 159 native document-session/Shift/language cycling; 95,499 grid; 95,527 ASCII+; 95,634 standard Vietnamese; 27 Shift timing/preference checks. The app builds, validates its plist, and signs successfully.
+- Updated the per-user installation and confirmed the three profiles in the native settings window. The installer now stages and replaces the complete bundle, preventing obsolete installed resources from invalidating its signature; the installed 0.8.0 bundle passes strict codesign verification. CUA automated typing produced literal text, consistent with the earlier automation limitation; its key API also rejects a standalone Shift press. Physical-key end-to-end switching and Chinese input remain a manual host check. Protocol-conforming document-session coverage passes.
+
+## Version 0.7.1 committed-text Shift+Delete command route
+
+- The live diagnostic contained no raw-event entry after a completed cycle, confirming macOS was not calling `handleEvent:` in that state. InputMethodKit's SDK documents a separate `didCommandBySelector:client:` keybinding route for responder commands such as `deleteBackward:`.
+- VietMoi now handles shifted `deleteBackward:` and `deleteForward:` through that route, checks physical Shift state directly, and calls the same deletion function used during active composition. Unshifted commands return false to the host.
+- Native regressions cover both command selectors outside composition and ordinary unshifted passthrough. Controller checks pass 148, grid checks pass 95,499, ASCII+ checks pass 95,527, standard-output checks pass 95,634, and Shift timing checks pass 27. Version 0.7.1 builds successfully with a valid plist and signature.
+
+## Version 0.7.0 inline tone composition preview
+
+- Tone selection is now visible immediately in marked text. Raised spacing indicators are separate from committed vietmoi suffixes; ngã uses U+02DC SMALL TILDE, producing `nh˜` after `nh + ngã` without combining the mark onto h.
+- All marked composition is sent as an explicitly single-underlined attributed string. Standard output removes the temporary spacing indicator when a nucleus arrives and places the tone on the correct vowel.
+- Added engine, standard-preview, native marked-text, underline, cancellation, and Backspace regressions. Grid checks pass 95,499, standard-output checks pass 95,634, native controller checks pass 145, ASCII+ checks pass 95,527, and Shift timing checks pass 27. Version 0.7.0 builds successfully with a valid plist and signature.
+
+## Version 0.6.4 denied-document fallback and diagnostics
+
+- Fixed a concrete fallback bug: recent commit history was cleared before Shift+Delete tried to use it. The handler now preserves contiguous recent commits through the attempt and reconstructs the deletion range from them when both attributed and plain document reads fail.
+- Shift detection now also queries the combined-session physical state of left/right Shift. A regression types `abc nmq` through literal ASCII, disables both document-reading APIs, and still deletes to `abc`.
+- Added a diagnostic containing only keycode, Shift-state booleans, handled status, and selection range; typed text is never logged. This will distinguish event-delivery failures from document-operation failures during physical testing.
+- Native controller checks pass 143, standard-output checks pass 95,633, ASCII+ checks pass 95,527, and Shift timing checks pass 27. Version 0.6.4 builds successfully with a valid plist and signature.
 
 ## Version 0.6.3 real-client Shift+Delete handling
 

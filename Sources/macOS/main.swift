@@ -3,6 +3,7 @@ import InputMethodKit
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     var server: IMKServer?
+    private var languageObserver: NSObjectProtocol?
     func applicationDidFinishLaunching(_ notification: Notification) {
         guard let identifier = Bundle.main.bundleIdentifier,
               let connection = Bundle.main.object(forInfoDictionaryKey: "InputMethodConnectionName") as? String,
@@ -13,7 +14,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         server = IMKServer(name: connection, bundleIdentifier: identifier)
         NSLog("VietMoi: input-method server ready")
+        AppCopy.language = KeyboardPreferences.shared.language
         configureMenu()
+        languageObserver = NotificationCenter.default.addObserver(forName: AppCopy.didChange, object: nil, queue: .main) { [weak self] _ in self?.configureMenu() }
         if !KeyboardProfiles.shared.hasOpenedSetup || NSRunningApplication.current.isActive {
             SettingsWindow.shared.open()
         }
@@ -27,15 +30,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func configureMenu() {
         let main = NSMenu()
         let item = NSMenuItem()
-        let menu = NSMenu(title: "viet")
-        let settings = NSMenuItem(title: "Settings…", action: #selector(openSettings), keyEquivalent: ",")
+        let menu = NSMenu(title: AppDesign.name)
+        let settings = NSMenuItem(title: AppCopy.text("settings") + "…", action: #selector(openSettings), keyEquivalent: ",")
         settings.target = self
         menu.addItem(settings)
-        let hide = NSMenuItem(title: "Hide viet", action: #selector(SettingsWindow.hideSetup), keyEquivalent: "h")
+        let hide = NSMenuItem(title: AppCopy.text("hideApp"), action: #selector(SettingsWindow.hideSetup), keyEquivalent: "h")
         hide.target = SettingsWindow.shared
         menu.addItem(hide)
         menu.addItem(.separator())
-        menu.addItem(withTitle: "Quit viet", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        menu.addItem(withTitle: AppCopy.text("quitApp"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         item.submenu = menu
         main.addItem(item)
         NSApp.mainMenu = main

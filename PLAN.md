@@ -136,3 +136,58 @@ MVP decisions: Swift core for a single-platform prototype; no external runtime. 
 - [x] Recognize Shift+Delete from tracked modifier transitions even when Delete's key event omits the Shift flag.
 - [x] Use the IMK plain-string API as a fallback when attributed document access is unavailable.
 - [x] Add real-event-shaped and document-access-fallback controller regressions.
+
+## Version 0.6.4 — denied-document fallback and diagnostics
+
+- [x] Stop clearing recent commits before Shift+Delete attempts.
+- [x] Reconstruct the deletion range from contiguous recent commits when both IMK text-reading APIs fail.
+- [x] Query physical left/right Shift state directly in addition to event and tracked state.
+- [x] Add a metadata-only diagnostic line for physical confirmation; never log typed text.
+
+## Version 0.7.0 — inline tone composition preview
+
+- [x] Display the selected tone immediately after the initial/medial, before a nucleus exists.
+- [x] Use U+02DC SMALL TILDE as the raised standalone ngã indicator (`nh˜`).
+- [x] Underline marked composition explicitly through InputMethodKit.
+- [x] Replace the temporary indicator with normal standard-Vietnamese tone placement once the nucleus is selected.
+- [x] Preserve final vietmoi output characters without duplicating the preview indicator.
+
+## Version 0.7.1 — committed-text Shift+Delete command route
+
+- [x] Handle InputMethodKit `deleteBackward:` and `deleteForward:` command selectors outside active composition.
+- [x] Use physical Shift state because command selectors do not include modifier flags.
+- [x] Share the exact deletion implementation with the raw-event route.
+- [x] Pass ordinary unshifted Delete commands through to the host.
+
+
+## Version 0.8.0 — keyboard cycling and Chinese demo
+
+- [x] Make English a standalone saved keyboard and cycle all profiles on an isolated Left Shift tap.
+- [x] Ship English, Vietnamese, and Chinese Microsoft Shuangpin, preserving existing profiles on upgrade.
+- [x] Add offline Simplified Chinese phrases, candidate selection, editing, and paging.
+- [x] Add a per-profile Shuangpin virtual keyboard option; retain candidates when the guide is hidden.
+- [x] Use a globe for keyboard switching and show the physical Shuangpin key map.
+- [x] Cover persistence, migration, three-language switching, Chinese input, and existing Vietnamese behavior.
+- [ ] Confirm physical-key switching and Chinese entry in a live host; CUA's automated text entry bypassed composition and standalone modifier taps are unsupported.
+
+
+## Version 0.15.0 — multilingual completion and mobile response
+
+- [x] Reconcile the newer siêu việt source and branding with multilingual profiles.
+- [x] Select keyboard language before language-specific input/output choices.
+- [x] Persist independent completion toggles and run suggestions in the background.
+- [x] Use neutral keys, gapless hit regions, larger press previews, and slide selection.
+- [x] Add vertical and horizontal spacebar cursor tracking.
+- [x] Pass native/core/mobile regressions and three simulator interaction tests.
+- [x] Install and launch the signed current iOS build on the connected iPhone.
+- [x] Verify the current Mac process, signing, executable, and source fingerprint.
+- [x] Purge obsolete app bundles and release artifacts while preserving sources.
+
+
+## Version 0.15.1 — suggestion-strip visual fix
+
+- [x] Reproduce the overlapping first row with completion enabled.
+- [x] Reserve suggestion-strip height during initial sizing, settings changes, and rotation.
+- [x] Keep key rows within the height supplied by the host.
+- [x] Prevent repeated unchanged language notifications from the keyboard extension.
+- [x] Verify portrait, landscape, symbols, and actual system keyboard activation.

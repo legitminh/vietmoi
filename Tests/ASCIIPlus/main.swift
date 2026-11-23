@@ -5,89 +5,88 @@ func expect(_ condition: @autoclosure () -> Bool, _ message: String) {
     checks += 1
     if !condition() { fatalError("FAILED: \(message)") }
 }
-func key(_ character: Character) -> UInt16 {
-    character == " " ? 49 : ASCIIKeyboardLayout.keyCodesByLabel[String(character)]!
-}
-func type(_ text: String, into engine: inout KeyboardEngine) -> EngineEffect {
-    var result: EngineEffect = .none
+func key(_ character: Character) -> UInt16 { ASCIIKeyboardLayout.keyCodesByLabel[String(character)]! }
+func type(_ text: String, into engine: inout KeyboardEngine, keymap: ASCIIPlusKeymap = .sieuviet) -> EngineEffect {
+    var result = EngineEffect.none
     for character in text {
-        guard let value = ASCIIPlusMapping.bindings(for: engine.phase)[key(character)] else { fatalError("Unmapped example key") }
+        guard let value = ASCIIPlusMapping.bindings(for: engine.phase, inventory: engine.inventory, keymap: keymap)[key(character)] else { fatalError("Unmapped example \(character) in \(engine.phase)") }
         result = engine.selectComponent(value)
     }
     return result
 }
 var engine = KeyboardEngine()
-expect(type("mwae", into: &engine) == .commit("ma "), "ma with empty final")
-expect(type("meae", into: &engine) == .commit("ma´"), "má uses e for sắc")
-expect(type("xwin", into: &engine) == .commit("xin "), "xin")
-expect(type("zwao", into: &engine) == .commit("chao "), "ch initial uses z")
-expect(type("awae", into: &engine) == .commit("đa "), "đ initial uses a")
-expect(type("twei", into: &engine) == .commit("tei "), "tay entered as tei")
-expect(type("khae", into: &engine) == .commit("kua?"), "u medial + standalone hỏi uses h")
-expect(type("hcae", into: &engine) == .commit("hoa`"), "o medial + huyền uses c")
-expect(type("mwue", into: &engine) == .commit("mia "), "u nucleus selects corrected ia")
-expect(type("nwiy", into: &engine) == .commit("ninh "), "final y selects nh")
-expect(type("ywie", into: &engine) == .commit("nhi "), "initial y selects nh")
-expect(type("uwce", into: &engine) == .commit("tho "), "th initial and extra o nucleus")
-expect(type("twle", into: &engine) == .commit("tu "), "spare l preserves u nucleus")
-expect(type("mwwe", into: &engine) == .commit("mua "), "spare w preserves ua nucleus")
-expect(type("mevn", into: &engine) == .commit("muôn´"), "spare v preserves uô nucleus")
-expect(type("ewae", into: &engine) == .commit("a "), "e initial selects no onset")
-
-expect(type("owae", into: &engine) == .commit("tra "), "o initial selects tr")
-expect(ASCIIPlusMapping.finals[49] == nil, "Space is no longer a final action")
-
-let toneOrder = [0, 1, 2, 3, 5, 4]
-for (row, keys) in ["weryui", "sdfhjk", "zxcbnm"].enumerated() {
-    for (column, character) in keys.enumerated() {
-        expect(ASCIIPlusMapping.medialTones[key(character)] == row * 6 + toneOrder[column],
-               "new pre-vowel/tone layout maps \(character)")
-    }
+let examples = [("mses", "ma "), ("msed", "má "), ("msej", "mả "), ("xvns", "xin "),
+                ("jsos", "chao "), ("dses", "đa "), ("zses", "za "), ("rwos", "răo "),
+                ("iues", "khwiê "), ("hhef", "hwà "), ("jles", "chuô "), ("mlnd", "muốn "),
+                ("frej", "fở "), ("imoj", "khwỉo "), ("tead", "tiếng "), ("xaas", "xoong "), ("baas", "boong "), ("sacd", "soóc "), ("tsos", "tao ")]
+for (keys, output) in examples { expect(type(keys, into: &engine) == .commit(output), "ASCII+ \(keys) -> \(output)") }
+let expectedVowels: [String: String] = [
+    "a":"oo", "w":"ă", "s":"a", "z":"â", "e":"iê", "d":"e", "x":"ê", "r":"ơ", "f":"o", "c":"ô", "t":"ư", "g":"u", "v":"i",
+    "y":"wă", "h":"wa", "b":"wâ", "u":"wiê", "j":"we", "n":"wê", "i":"wơ", "k":"wo", "m":"wi", "o":"ươ", "l":"uô"]
+expect(expectedVowels.count == 24, "combined map has 24 unique physical positions")
+for (physical, expected) in expectedVowels {
+    let choice = ASCIIPlusMapping.bindings(for: .onglideCoreVowel)[key(physical.first!)]!
+    expect(engine.inventory.vowelAtoms[choice].label == expected, "exact supplied combined binding \(physical)")
 }
-expect(ASCIIPlusMapping.medialTones[key("i")] == 4, "explicit empty pre-vowel + ngã maps to i")
-
-// Every phoneme from the original engine must remain reachable, with no collisions per phase.
-let inventories = [KeyboardEngine.initials.count, 18, KeyboardEngine.nuclei.count, KeyboardEngine.finals.count]
+let expectedInitials = ["j":"ch", "y":"d", "d":"đ", "i":"kh", "a":"ng", "w":"nh", "f":"f", "u":"th", "e":"tr", "q":"q", "o":""]
+for (physical, expected) in expectedInitials {
+    let index = ASCIIPlusMapping.bindings(for: .initial)[key(physical.first!)]!
+    expect(engine.inventory.initials[index] == expected, "exact initial binding \(physical)")
+}
+expect(!engine.inventory.finals.contains("u") && engine.inventory.finals.contains("o"), "Final inventory replaces u with o")
+expect(ASCIIPlusMapping.bindings(for: .final)[key("o")] == engine.inventory.finals.firstIndex(of: "o"), "o key chooses final o")
+expect(ASCIIPlusMapping.bindings(for: .final)[key("a")] == engine.inventory.finals.firstIndex(of: "ng"), "a key chooses final ng")
+expect(ASCIIPlusMapping.bindings(for: .final)[key("q")] == nil, "q no longer chooses final ng")
+expect(ASCIIPlusMapping.bindings(for: .final)[key("u")] == nil, "u no longer chooses a final")
+var finalGuide = KeyboardEngine()
+_ = type("ms", into: &finalGuide)
+expect(ASCIIPlusMapping.actions(for: finalGuide)[key("o")] == "o" && ASCIIPlusMapping.actions(for: finalGuide)[key("u")] == nil, "Guide follows final o mapping")
+let expectedTones: [Character: VietnameseTone] = ["s":.ngang, "d":.sac, "f":.huyen, "j":.hoi, "k":.nga, "l":.nang]
+for (physical, expected) in expectedTones { expect(ASCIIPlusMapping.bindings(for: .tone)[key(physical)] == expected.rawValue, "exact tone binding") }
+expect(ASCIIPlusMapping.bindings(for: .onglideCoreVowel)[key("a")] == engine.inventory.vowelAtoms.firstIndex { $0.label == "oo" }, "a chooses oo in round two")
 for phase in Phase.allCases {
-    let bindings = ASCIIPlusMapping.bindings(for: phase)
-    expect(Set(bindings.values) == Set(0..<inventories[phase.rawValue]), "complete component coverage")
-    expect(bindings.count == Set(bindings.values).count, "one distinct key for every component")
+    expect(!ASCIIPlusMapping.inputKeyCodes(for: phase).contains(41), "semicolon remains ordinary punctuation in every round")
 }
-for row in ASCIIKeyboardLayout.rows {
-    expect(abs(row.reduce(0) { $0 + $1.units } - 14.5) < 0.001, "ASCII popup rows align")
+for unused in ["p", "q"] { expect(ASCIIPlusMapping.bindings(for: .onglideCoreVowel)[key(unused.first!)] == nil, "unused modal letters do not select a vowel") }
+expect(!ASCIIPlusMapping.inputKeyCodes(for: .onglideCoreVowel).contains(43), "comma is ordinary punctuation in every round")
+let counts = [26, 24, 11, 6]
+let bindingsByPhase = Phase.allCases.map { ASCIIPlusMapping.bindings(for: $0) }
+for phase in Phase.allCases {
+    let bindings = bindingsByPhase[phase.rawValue]
+    expect(Set(bindings.values) == Set(0..<counts[phase.rawValue]), "complete inventory coverage")
+    expect(bindings.count == Set(bindings.values).count, "one physical key per default atom")
+    expect(bindings[49] == nil && bindings[51] == nil && bindings[53] == nil, "semicolonnds cannot become atoms")
 }
-expect(Set(ASCIIKeyboardLayout.keys.map(\.keyCode)).count == ASCIIKeyboardLayout.keys.count, "physical layout has no duplicate keys")
-let initial = ASCIIPlusMapping.initials[key("m")]!
-_ = engine.selectComponent(initial)
-let tone = ASCIIPlusMapping.medialTones[key("w")]!
-_ = engine.selectComponent(tone)
-let vowel = ASCIIPlusMapping.nuclei[key("u")]!
-_ = engine.selectComponent(vowel)
-expect(engine.backspace() == .marked("m"), "component backspace also undoes ia")
-expect(engine.clearCycle() == .cancel && engine.phase == .initial, "clear resets ASCII+ cycle")
-_ = engine.selectComponent(initial)
-expect(engine.press(24) == .cancel && engine.ascii, "Shift toggles literal ASCII and cancels partial cycle")
-_ = engine.press(24)
-expect(!engine.ascii && engine.phase == .initial, "Shift returns to phonemic input")
-
-// The same selected components must render identically through both input methods.
-for onset in KeyboardEngine.initials.indices {
-    for tone in 0..<18 {
-        for vowel in KeyboardEngine.nuclei.indices {
-            for final in KeyboardEngine.finals.indices {
+var remap = ASCIIPlusKeymap.sieuviet
+remap.initials["b"] = "m"; remap.initials["m"] = "b"
+expect(type("bses", into: &engine, keymap: remap) == .commit("ma "), "remap physical positions without changing atoms")
+let decoded = try JSONDecoder().decode(ASCIIPlusKeymap.self, from: JSONEncoder().encode(remap))
+expect(decoded == remap, "new keymaps are serializable with schema version")
+var inventory = VietnamesePhoneticInventory.sieuviet
+inventory.initials.reverse(); inventory.coreVowels.reverse(); inventory.onglides.reverse(); inventory.finals.reverse()
+var reordered = KeyboardEngine(inventory: inventory)
+expect(type("msed", into: &reordered) == .commit("má "), "named bindings survive inventory reordering")
+for row in ASCIIKeyboardLayout.rows { expect(abs(row.reduce(0) { $0 + $1.units } - 14.5) < 0.001, "popup rows align") }
+let inverseBindings = bindingsByPhase.map { Dictionary(uniqueKeysWithValues: $0.map { ($0.value, $0.key) }) }
+var paths = 0
+for onset in engine.inventory.initials.indices {
+    for vowel in engine.inventory.vowelAtoms.indices {
+        for tone in VietnameseTone.allCases {
+            for final in engine.inventory.finals.indices {
                 var grid = KeyboardEngine(), ascii = KeyboardEngine()
-                let gridKeys = [GridKey.actionSlots[onset], (tone / 6) * 8 + tone % 6,
-                                GridKey.actionSlots[vowel], GridKey.actionSlots[final]]
-                var gridResult: EngineEffect = .none, asciiResult: EngineEffect = .none
+                let values = [onset, vowel, final, tone.rawValue]
+                var gridResult = EngineEffect.none, asciiResult = EngineEffect.none
                 for phase in Phase.allCases {
-                    gridResult = grid.press(gridKeys[phase.rawValue])
-                    let value = [onset, tone, vowel, final][phase.rawValue]
-                    let physicalKey = ASCIIPlusMapping.bindings(for: phase).first { $0.value == value }!.key
-                    asciiResult = ascii.selectComponent(ASCIIPlusMapping.bindings(for: phase)[physicalKey]!)
+                    let index = phase.rawValue
+                    gridResult = grid.press(GridKey.actionSlots[values[index]])
+                    let physical = inverseBindings[index][values[index]]!
+                    asciiResult = ascii.selectComponent(bindingsByPhase[index][physical]!)
                 }
-                expect(gridResult == asciiResult && !ascii.isPending, "grid and ASCII+ must emit identical syllables")
+                expect(gridResult == asciiResult && grid.lastCommittedBasis == ascii.lastCommittedBasis,
+                       "grid and every ASCII+ physical path produce identical basis and display")
+                paths += 1
             }
         }
     }
 }
-print("Passed \(checks) ASCII+ checks, including all 95,472 grid/ASCII+ equivalence cases.")
+print("Passed \(checks) ASCII+ mapping checks (\(paths) physical-path equivalence cases).")

@@ -9,6 +9,7 @@ if let current = TISCopyCurrentKeyboardInputSource()?.takeRetainedValue(),
     currentID = Unmanaged<CFString>.fromOpaque(value).takeUnretainedValue() as String
     print("Current input source: \(currentID!)")
 }
+if action == "current" { exit(0) }
 if action == "prepare-update" && currentID != "com.minh.inputmethod.VietMoi" { exit(0) }
 if action == "register" {
     guard CommandLine.arguments.count > 2 else { exit(2) }
