@@ -422,5 +422,21 @@
   "startTyping": {
     "vi": "Bắt đầu gõ",
     "en": "Start typing"
+  },
+  "suggestions": {
+    "vi": "Gợi ý",
+    "en": "Suggestions"
+  },
+  "suggestionsOn": {
+    "vi": "Gợi ý: bật",
+    "en": "Suggestions: on"
+  },
+  "suggestionsOff": {
+    "vi": "Gợi ý: tắt",
+    "en": "Suggestions: off"
+  },
+  "acceptSuggestionHelp": {
+    "vi": "Tab hoặc chạm để chọn gợi ý. Dấu cách không chọn gợi ý.",
+    "en": "Tab or tap to accept a suggestion. Space never accepts one."
   }
 }

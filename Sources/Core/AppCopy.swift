@@ -116,6 +116,10 @@ enum AppCopy {
         "typingWith": "Đang gõ: {name}",
         "tryHelp": "Gõ bằng bàn phím thật hoặc bàn phím ảo. Chạm Shift để chuyển bàn phím. Esc để thoát.",
         "startTyping": "Bắt đầu gõ",
+        "suggestions": "Gợi ý",
+        "suggestionsOn": "Gợi ý: bật",
+        "suggestionsOff": "Gợi ý: tắt",
+        "acceptSuggestionHelp": "Tab hoặc chạm để chọn gợi ý. Dấu cách không chọn gợi ý.",
     ]
     private static let english: [String: String] = [
         "tagline": "Vietnamese, one choice at a time.",
@@ -224,5 +228,9 @@ enum AppCopy {
         "typingWith": "Typing with {name}",
         "tryHelp": "Type with your keyboard or the on-screen one. Tap Shift to switch keyboards. Esc exits.",
         "startTyping": "Start typing",
+        "suggestions": "Suggestions",
+        "suggestionsOn": "Suggestions: on",
+        "suggestionsOff": "Suggestions: off",
+        "acceptSuggestionHelp": "Tab or tap to accept a suggestion. Space never accepts one.",
     ]
 }

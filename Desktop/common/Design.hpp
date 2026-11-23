@@ -113,6 +113,10 @@ inline constexpr Copy copy[] = {
     {"typingWith", "Đang gõ: {name}", "Typing with {name}"},
     {"tryHelp", "Gõ bằng bàn phím thật hoặc bàn phím ảo. Chạm Shift để chuyển bàn phím. Esc để thoát.", "Type with your keyboard or the on-screen one. Tap Shift to switch keyboards. Esc exits."},
     {"startTyping", "Bắt đầu gõ", "Start typing"},
+    {"suggestions", "Gợi ý", "Suggestions"},
+    {"suggestionsOn", "Gợi ý: bật", "Suggestions: on"},
+    {"suggestionsOff", "Gợi ý: tắt", "Suggestions: off"},
+    {"acceptSuggestionHelp", "Tab hoặc chạm để chọn gợi ý. Dấu cách không chọn gợi ý.", "Tab or tap to accept a suggestion. Space never accepts one."},
 };
 inline std::string text(std::string_view key, const std::string &language = "vi") {
     for (const auto &entry : copy) if (entry.key == key) return language == "en" ? entry.en : entry.vi;

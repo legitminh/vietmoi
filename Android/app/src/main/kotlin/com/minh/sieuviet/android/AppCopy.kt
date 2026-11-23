@@ -115,6 +115,10 @@ object AppCopy {
         "typingWith" to "Đang gõ: {name}",
         "tryHelp" to "Gõ bằng bàn phím thật hoặc bàn phím ảo. Chạm Shift để chuyển bàn phím. Esc để thoát.",
         "startTyping" to "Bắt đầu gõ",
+        "suggestions" to "Gợi ý",
+        "suggestionsOn" to "Gợi ý: bật",
+        "suggestionsOff" to "Gợi ý: tắt",
+        "acceptSuggestionHelp" to "Tab hoặc chạm để chọn gợi ý. Dấu cách không chọn gợi ý.",
     )
     private val english = mapOf(
         "tagline" to "Vietnamese, one choice at a time.",
@@ -223,5 +227,9 @@ object AppCopy {
         "typingWith" to "Typing with {name}",
         "tryHelp" to "Type with your keyboard or the on-screen one. Tap Shift to switch keyboards. Esc exits.",
         "startTyping" to "Start typing",
+        "suggestions" to "Suggestions",
+        "suggestionsOn" to "Suggestions: on",
+        "suggestionsOff" to "Suggestions: off",
+        "acceptSuggestionHelp" to "Tab or tap to accept a suggestion. Space never accepts one.",
     )
 }
