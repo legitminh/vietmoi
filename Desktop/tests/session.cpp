@@ -1,4 +1,4 @@
-#include "Session.hpp"
+#include "Settings.hpp"
 #include "Surrounding.hpp"
 #include <iostream>
 #include <cstdlib>
@@ -33,6 +33,7 @@ void press(sv::Session &session, uint16_t hid) {
     session.key(down); down.down = false; down.time = clockTime += .01; session.key(down);
 }
 void type(sv::Session &session, const std::string &keys) { for (char key : keys) press(session, usage(key)); }
+void tap(sv::Session &session) { session.key({0xe1,true,false,true,false,false,clockTime += 1}); session.key({0xe1,false,false,false,false,false,clockTime += .05}); }
 int main(int argc, char **argv) {
     try {
         const char *path = argc > 1 ? argv[1] : std::getenv("SIEUVIET_ENGINE_PATH");
@@ -55,7 +56,8 @@ int main(int argc, char **argv) {
           type(session,"m"); session.key({0xe1,true,false,true,false,false,10}); session.key({0xe1,false,false,false,false,false,10.1});
           check(session.ascii() && doc.text == "m m", "tap keeps partial");
           session.key({0xe1,true,false,true,false,false,11}); session.key({0xe1,false,false,false,false,false,11.4}); check(session.ascii(), "hold does not toggle");
-          session.command(SV_TOGGLE_ASCII); type(session,"xaqs"); check(doc.text == "m mxoong ", "return to Vietnamese");
+          tap(session); check(!session.ascii() && session.keyboard().id == "vi", "tap cycles back to Vietnamese");
+          type(session,"xaqs"); check(doc.text == "m mxoong ", "return to Vietnamese");
           press(session,0x4c); check(doc.text == "m m", "verified cycle deletion"); }
         { Document doc; sv::Session session(core,doc,{1,1}); type(session,"r"); type(session,"z"); check(doc.text == "m", "unavailable grid key is consumed");
           type(session,"312"); check(doc.text == "má ", "grid order matches revised inventory"); }
@@ -71,8 +73,26 @@ int main(int argc, char **argv) {
           check(session.guide().find(": Xóa") != std::string::npos, "Vietnamese grid control label");
           check(session.configure({1,0,"en"}) && session.settings().input == 1 && session.settings().output == 0, "language keeps layout and spelling");
           check(session.guide().find(": Clear") != std::string::npos, "English grid control label");
-          session.command(SV_TOGGLE_ASCII);
-          check(session.configure({1,0,"vi"}) && session.ascii() && session.guide().find("Nhấn riêng") != std::string::npos, "language keeps ASCII mode and localizes guide help"); }
+          tap(session);
+          check(session.configure({1,0,"vi"}) && session.ascii() && session.guide().find("Chạm riêng") != std::string::npos, "language keeps the English keyboard and localizes guide help"); }
+        { std::istringstream file("version=2\nlanguage=en\nactive=B\nkeyboard=A,vi,grid4x8,quốc ngữ,Grid, phở\nkeyboard=B,en,qwerty,literal,English\nkeyboard=C,vi,ascii+,sieuviet,Mine\n");
+          auto settings = sv::parseSettings(file);
+          check(settings.keyboards.size() == 3 && settings.keyboards[0].name == "Grid, phở" && settings.keyboards[0].input == 1 && settings.keyboards[0].output == 1, "version 2 list");
+          check(sv::formatSettings(settings) == "version=2\nlanguage=en\nactive=B\nkeyboard=A,vi,grid4x8,quốc ngữ,Grid, phở\nkeyboard=B,en,qwerty,literal,English\nkeyboard=C,vi,ascii+,sieuviet,Mine\n", "version 2 round trip");
+          Document doc; sv::Session session(core, doc, settings);
+          check(session.keyboard().id == "B" && session.ascii(), "active keyboard opens");
+          tap(session); check(session.keyboard().id == "C" && !session.ascii(), "tap moves to the next keyboard");
+          type(session,"msed"); check(doc.text == "má ", "third keyboard types ASCII+ siêu việt");
+          tap(session); check(session.keyboard().id == "A", "tap wraps to the first keyboard");
+          type(session,"r312"); check(doc.text == "má má ", "grid keyboard types quốc ngữ");
+          sv::Session reopened(core, doc, settings, "C"); check(reopened.keyboard().id == "C", "adapter keeps its keyboard across focus");
+          auto chosen = settings; chosen.active = "A";
+          check(reopened.configure(chosen) && reopened.keyboard().id == "A", "a keyboard selected in settings opens");
+          auto edited = chosen; edited.keyboards[1].name = "Anh";
+          tap(reopened); check(reopened.configure(edited) && reopened.keyboard().id == "B", "an edit keeps the current keyboard"); }
+        { std::istringstream file("version=1\ninput=1\noutput=1\nlanguage=vi\n");
+          auto list = sv::keyboardList(sv::parseSettings(file));
+          check(list.size() == 2 && list[0].input == 1 && list[0].output == 1 && list[1].literal(), "version 1 migrates to [Vietnamese, English]"); }
         std::cout << "Passed " << checks << " desktop policy checks against the actual Swift library.\n";
         return 0;
     } catch (const std::exception &error) { std::cerr << error.what() << '\n'; return 1; }

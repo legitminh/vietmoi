@@ -23,6 +23,8 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/fcitx-input.conf DESTINATION ${CMAKE_I
 install(PROGRAMS settings.py DESTINATION ${CMAKE_INSTALL_BINDIR} RENAME sieuviet-settings)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/org.sieuviet.Settings.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
 install(FILES ../common/design.json DESTINATION ${CMAKE_INSTALL_DATADIR}/sieuviet)
+# The shared app UI hosted by sieuviet-settings (scripts/build-web.py refreshes it).
+install(DIRECTORY ../../Resources/WebApp DESTINATION ${CMAKE_INSTALL_DATADIR}/sieuviet)
 add_executable(linux-host-test host-test.cpp)
 target_link_libraries(linux-host-test PRIVATE PkgConfig::GTK3)
 

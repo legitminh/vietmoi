@@ -30,7 +30,7 @@ def main():
     if distro["ID"].strip('"') != "ubuntu":
         parser.error("Build this package on Ubuntu")
     arch = output("dpkg", "--print-architecture")
-    dependencies = {"python3", "python3-gi", "gir1.2-gtk-3.0"}
+    dependencies = {"python3", "python3-gi", "gir1.2-gtk-3.0", "gir1.2-webkit2-4.1"}
     # Resolve the complete native dependency closure, excluding the bundled Swift runtime.
     for binary in stage.rglob("*"):
         if not binary.is_file():

@@ -122,7 +122,7 @@ class Service : public ITfTextInputProcessorEx, public ITfKeyEventSink,
     std::atomic<ULONG> references_{1}; sv::Com<ITfThreadMgr> manager_;
     sv::Com<ITfKeystrokeMgr> keys_; DWORD threadSink_ = TF_INVALID_COOKIE, editSink_ = TF_INVALID_COOKIE;
     TfClientId client_ = TF_CLIENTID_NULL; Document document_; std::unique_ptr<sv::Session> session_;
-    bool editing_ = false, ascii_ = false; HWND guide_ = nullptr; HFONT font_ = nullptr;
+    bool editing_ = false; std::string keyboard_; HWND guide_ = nullptr; HFONT font_ = nullptr;
     bool disabled() {
         sv::Com<ITfCompartmentMgr> manager;
         if (FAILED(document_.context->QueryInterface(IID_ITfCompartmentMgr, reinterpret_cast<void **>(manager.put())))) return false;
@@ -173,7 +173,7 @@ class Service : public ITfTextInputProcessorEx, public ITfKeyEventSink,
         SetWindowPos(guide_, HWND_TOPMOST, x, y, width, height, SWP_NOACTIVATE | SWP_SHOWWINDOW);
     }
     void detach() {
-        hide(); if (session_) { ascii_ = session_->ascii(); session_->invalidate(); session_.reset(); }
+        hide(); if (session_) { keyboard_ = session_->keyboard().id; session_->invalidate(); session_.reset(); }
         if (document_.context && editSink_ != TF_INVALID_COOKIE) {
             sv::Com<ITfSource> source;
             if (SUCCEEDED(document_.context->QueryInterface(IID_ITfSource, reinterpret_cast<void **>(source.put())))) source->UnadviseSink(editSink_);
@@ -184,7 +184,7 @@ class Service : public ITfTextInputProcessorEx, public ITfKeyEventSink,
         detach(); if (!document) return;
         if (FAILED(document->GetTop(document_.context.put())) || !document_.context) return;
         document_.client = client_; document_.sink = this;
-        try { session_ = std::make_unique<sv::Session>(core(), document_, sv::loadSettings(sv::windowsSettingsPath()), ascii_); }
+        try { session_ = std::make_unique<sv::Session>(core(), document_, sv::loadSettings(sv::windowsSettingsPath()), keyboard_); }
         catch (...) { detach(); return; }
         sv::Com<ITfSource> source;
         if (SUCCEEDED(document_.context->QueryInterface(IID_ITfSource, reinterpret_cast<void **>(source.put()))))

@@ -45,7 +45,7 @@ struct State : fcitx::InputContextProperty {
     Document document; std::unique_ptr<sv::Session> session;
     sv::SettingsFile settings{sv::linuxSettingsPath()};
     explicit State(fcitx::InputContext *context) : document(context) { activate(); }
-    void activate() { const bool ascii = session && session->ascii(); session = std::make_unique<sv::Session>(core(), document, settings.current(), ascii); }
+    void activate() { const auto keyboard = session ? session->keyboard().id : std::string(); session = std::make_unique<sv::Session>(core(), document, settings.current(), keyboard); }
     void guide() {
         document.context->inputPanel().setAuxDown(fcitx::Text(session->ascii() ? "" : session->guide()));
         document.context->updateUserInterface(fcitx::UserInterfaceComponent::InputPanel);

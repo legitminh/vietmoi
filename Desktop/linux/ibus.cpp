@@ -43,10 +43,10 @@ struct IBusDocument : sv::Document {
     }
 };
 struct State {
-    IBusDocument document; std::unique_ptr<sv::Session> session; bool ascii = false; bool secure = false;
+    IBusDocument document; std::unique_ptr<sv::Session> session; std::string keyboard; bool secure = false;
     sv::SettingsFile settings{sv::linuxSettingsPath()};
     explicit State(IBusEngine *engine) : document(engine) { activate(); }
-    void activate() { if (session) ascii = session->ascii(); session = std::make_unique<sv::Session>(core(), document, settings.current(), ascii); }
+    void activate() { if (session) keyboard = session->keyboard().id; session = std::make_unique<sv::Session>(core(), document, settings.current(), keyboard); }
     void guide() { ibus_engine_update_auxiliary_text(document.engine, ibus_text_new_from_string(session->guide().c_str()), !session->ascii() && !secure); }
 };
 struct SieuvietEngine { IBusEngine parent; State *state; };
