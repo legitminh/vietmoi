@@ -20,6 +20,7 @@ catalog = json.loads((share / 'sieuviet/design.json').read_text())
 web_root = Path(os.environ.get('SIEUVIET_WEB_ROOT', share / 'sieuviet/WebApp')).resolve()
 path = Path(os.environ.get('SIEUVIET_CONFIG_FILE', Path(os.environ.get('XDG_CONFIG_HOME', Path.home() / '.config')) / 'sieuviet/settings.conf'))
 inputs = {'vi': ['ascii+', 'grid4x8'], 'en': ['qwerty']}
+modes = {'vi': ['sieuviet', 'quốc ngữ'], 'en': ['sieuviet']}
 outputs = {'vi': ['sieuviet', 'quốc ngữ'], 'en': ['literal']}
 
 
@@ -27,24 +28,32 @@ def interface_language(value):
     # Interface languages: Vietnamese (default), English and Chinese.
     return value if value in ('vi', 'en', 'zh') else 'vi'
 
-def profile(identifier, name, language, input_type, output_type):
+def profile(identifier, name, language, input_type, output_type, input_mode='sieuviet'):
     language = 'en' if language == 'en' else 'vi'
     return {'id': identifier or str(uuid.uuid4()).upper(), 'name': name, 'language': language,
             'inputType': input_type if input_type in inputs[language] else inputs[language][0],
+            'inputMode': input_mode if input_mode in modes[language] else modes[language][0],
             'outputType': output_type if output_type in outputs[language] else outputs[language][0],
             'showVirtualKeyboard': True}
 
 
 def load():
-    """Read settings.conf (version 2, or version 1 as [that keyboard, English])."""
+    """Read settings.conf (version 3; version 2 lines have no input mode; version 1 is [that keyboard, English])."""
     lines = path.read_text().splitlines() if path.exists() else []
-    values, profiles = {}, []
+    values, profiles, version = {}, [], 1
     for line in lines:
         key, _, value = line.partition('=')
-        if key == 'keyboard':
-            fields = value.split(',', 4)
-            if len(fields) == 5:
-                profiles.append(profile(*[fields[0], fields[4], fields[1], fields[2], fields[3]]))
+        if key == 'version':
+            version = int(value) if value.isdigit() else 1
+        elif key == 'keyboard':
+            if version >= 3:
+                fields = value.split(',', 5)
+                if len(fields) == 6:
+                    profiles.append(profile(fields[0], fields[5], fields[1], fields[2], fields[4], fields[3]))
+            else:
+                fields = value.split(',', 4)
+                if len(fields) == 5:
+                    profiles.append(profile(fields[0], fields[4], fields[1], fields[2], fields[3]))
         elif key:
             values[key] = value
     if not profiles:
@@ -63,13 +72,13 @@ def load():
 
 def save(state):
     profiles = [profile(str(item.get('id') or ''), str(item.get('name', '')).replace('\n', ' '), item.get('language'),
-                        item.get('inputType'), item.get('outputType')) for item in state.get('profiles', [])]
+                        item.get('inputType'), item.get('outputType'), item.get('inputMode')) for item in state.get('profiles', [])]
     if not profiles:
         return
     active = state.get('activeID') if any(item['id'] == state.get('activeID') for item in profiles) else profiles[0]['id']
-    text = f"version=2\nlanguage={interface_language(state.get('interfaceLanguage'))}\nactive={active}\n"
+    text = f"version=3\nlanguage={interface_language(state.get('interfaceLanguage'))}\nactive={active}\n"
     text += f"shiftTapSeconds={float(state.get('shiftTapSeconds', 0.2))}\n"
-    text += ''.join(f"keyboard={item['id']},{item['language']},{item['inputType']},{item['outputType']},{item['name']}\n" for item in profiles)
+    text += ''.join(f"keyboard={item['id']},{item['language']},{item['inputType']},{item['inputMode']},{item['outputType']},{item['name']}\n" for item in profiles)
     temporary = None
     try:
         path.parent.mkdir(parents=True, exist_ok=True)

@@ -6,13 +6,16 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 
-/** One managed keyboard: its language decides the allowed input layouts and outputs. */
+/** One managed keyboard: its language decides the allowed input layouts, input modes and outputs.
+ *  `mode` is what the keys spell: 0 siêu việt's own choices, 1 quốc ngữ's. */
 data class KeyboardProfile(val id: String, val name: String, val language: String = "vi",
-                           val input: Int = 0, val output: Int = 0, val showVirtualKeyboard: Boolean = true) {
+                           val input: Int = 0, val output: Int = 0, val showVirtualKeyboard: Boolean = true,
+                           val mode: Int = 0) {
     /** English keyboards type literal text through the engine's literal mode. */
     val literal: Boolean get() = language == "en"
     fun toJson(): JSONObject = JSONObject().put("id", id).put("name", name).put("language", if (literal) "en" else "vi")
         .put("inputType", if (literal) "qwerty" else if (input == 1) "grid4x8" else "ascii+")
+        .put("inputMode", if (!literal && mode == 1) "quốc ngữ" else "sieuviet")
         .put("outputType", if (literal) "literal" else if (output == 1) "quốc ngữ" else "sieuviet")
         .put("showVirtualKeyboard", showVirtualKeyboard)
     companion object {
@@ -21,7 +24,8 @@ data class KeyboardProfile(val id: String, val name: String, val language: Strin
             return KeyboardProfile(data.getString("id"), data.optString("name"), if (english) "en" else "vi",
                 if (!english && data.optString("inputType") == "grid4x8") 1 else 0,
                 if (!english && data.optString("outputType") == "quốc ngữ") 1 else 0,
-                data.optBoolean("showVirtualKeyboard", true))
+                data.optBoolean("showVirtualKeyboard", true),
+                if (!english && data.optString("inputMode") == "quốc ngữ") 1 else 0)
         }
     }
 }

@@ -10,6 +10,8 @@ extern "C" {
 /* Engine ABI 1. A document/IME session API will be added separately. */
 typedef void *sv_engine_t;
 enum sv_output { SV_SIEUVIET = 0, SV_QUOC_NGU = 1 };
+/* What the keys spell: siêu việt's own choices or quốc ngữ's. Independent of the output. */
+enum sv_input_mode { SV_INPUT_SIEUVIET = 0, SV_INPUT_QUOC_NGU = 1 };
 enum sv_command {
     SV_KEY = 0, SV_COMPONENT = 1, SV_BACKSPACE = 2, SV_CANCEL = 3,
     SV_FINISH = 4, SV_TOGGLE_ASCII = 5, SV_SPACE = 6, SV_CLEAR = 7
@@ -22,6 +24,8 @@ enum sv_error { SV_INVALID_ARGUMENT = -1, SV_UNMAPPED_KEY = -2 };
 uint32_t sv_engine_abi_version(void);
 /* Invalid output returns NULL. Every successful create needs exactly one destroy. */
 sv_engine_t sv_engine_create(int32_t output);
+/* sv_engine_create with an sv_input_mode (create uses SV_INPUT_SIEUVIET). Invalid values return NULL. */
+sv_engine_t sv_engine_create_with_input(int32_t output, int32_t input_mode);
 /* NULL is harmless; all other handles must be live values returned by create.
    Never reuse or double-destroy a handle. Calls on a handle must be serialized. */
 void sv_engine_destroy(sv_engine_t engine);

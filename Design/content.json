@@ -653,5 +653,20 @@
     "vi": "không tải được bộ gõ. hãy tải lại trang.",
     "en": "the keyboard engine could not load. reload the page.",
     "zh": "无法加载输入引擎。请重新加载页面。"
+  },
+  "exit": {
+    "vi": "thoát",
+    "en": "exit",
+    "zh": "退出"
+  },
+  "inputModeLabel": {
+    "vi": "kiểu gõ",
+    "en": "input",
+    "zh": "输入方式"
+  },
+  "inputModeProfile": {
+    "vi": "kiểu gõ cho {name}",
+    "en": "input for {name}",
+    "zh": "{name} 的输入方式"
   }
 }

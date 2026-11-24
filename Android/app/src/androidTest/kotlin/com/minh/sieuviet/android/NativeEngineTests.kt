@@ -32,6 +32,20 @@ class NativeEngineTests {
         }
     }
 
+    @Test fun quocNguInputModeSpellsWithQuocNguChoices() {
+        for ((output, keys, expected) in listOf(Triple(1, "qlcd", "quốc "), Triple(0, "zses", "za "))) {
+            NativeEngine(output, 0, mode = 1).use { engine ->
+                var effect = NativeEngine.Effect(0, "")
+                for (key in keys) effect = engine.dispatch(NativeEngine.KEY, usage(key))
+                assertEquals(expected, effect.text)
+                assertEquals(NativeEngine.COMMIT, effect.kind)
+            }
+        }
+        val profile = KeyboardProfile.fromJson(KeyboardProfile("A", "Mixed", mode = 1).toJson())
+        assertEquals(1, profile.mode)
+        assertEquals(0, KeyboardProfile.fromJson(KeyboardProfile("B", "English", "en", mode = 1).toJson()).mode)
+    }
+
     @Test fun all79200ConstructionsRunNativelyOnAndroid() {
         var count = 0
         for (output in 0..1) NativeEngine(output, 0).use { engine ->

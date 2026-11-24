@@ -9,13 +9,14 @@
 
 namespace sv {
 // One managed keyboard. Vietnamese keyboards choose an input layout (0 ASCII+,
-// 1 grid4x8) and an output (0 siêu việt, 1 quốc ngữ); English keyboards type literally.
+// 1 grid4x8), an input mode (0 siêu việt, 1 quốc ngữ: what the keys spell) and an
+// output (0 siêu việt, 1 quốc ngữ); English keyboards type literally.
 struct Keyboard {
-    std::string id, name, language = "vi"; int input = 0; int output = 0;
+    std::string id, name, language = "vi"; int input = 0; int output = 0; int mode = 0;
     bool literal() const { return language == "en"; }
 };
 inline bool operator==(const Keyboard &a, const Keyboard &b) {
-    return a.id == b.id && a.name == b.name && a.language == b.language && a.input == b.input && a.output == b.output;
+    return a.id == b.id && a.name == b.name && a.language == b.language && a.input == b.input && a.output == b.output && a.mode == b.mode;
 }
 inline bool operator!=(const Keyboard &a, const Keyboard &b) { return !(a == b); }
 // `input` and `output` describe the Vietnamese keyboard of a legacy snapshot that
@@ -68,7 +69,7 @@ class Session {
         return list.size();
     }
     sv_engine_t make(const Keyboard &keyboard) {
-        auto engine = core_.create(keyboard.output);
+        auto engine = core_.createWithInput(keyboard.output, keyboard.literal() ? 0 : keyboard.mode);
         if (engine && keyboard.literal()) core_.dispatch(engine, SV_TOGGLE_ASCII, 0);
         return engine;
     }

@@ -55,6 +55,24 @@ int main(void) {
     CHECK(sv_engine_dispatch_key(NULL, 0, 4) == SV_INVALID_ARGUMENT);
     CHECK(sv_engine_copy_guide(NULL, 0, NULL, 0) == SV_INVALID_ARGUMENT);
 
+    /* Quốc ngữ input mode spells with quốc ngữ's choices, into either output. */
+    CHECK(sv_engine_create_with_input(SV_QUOC_NGU, 2) == NULL);
+    CHECK(sv_engine_create_with_input(2, SV_INPUT_QUOC_NGU) == NULL);
+    {
+        sv_engine_t engine = sv_engine_create_with_input(SV_QUOC_NGU, SV_INPUT_QUOC_NGU);
+        CHECK(engine);
+        const char *keys = "qlcd";
+        for (const char *key = keys; *key; ++key) sv_engine_dispatch(engine, SV_KEY, usage(*key));
+        expect_text(engine, "quốc ");
+        sv_engine_destroy(engine);
+        engine = sv_engine_create_with_input(SV_SIEUVIET, SV_INPUT_QUOC_NGU);
+        CHECK(engine);
+        keys = "zses";
+        for (const char *key = keys; *key; ++key) sv_engine_dispatch(engine, SV_KEY, usage(*key));
+        expect_text(engine, "za ");
+        sv_engine_destroy(engine);
+    }
+
     word("msed", SV_SIEUVIET, "má ");
     word("mlnd", SV_QUOC_NGU, "muốn ");
     word("rwos", SV_SIEUVIET, "răo ");

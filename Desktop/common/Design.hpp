@@ -136,6 +136,11 @@ inline constexpr Copy copy[] = {
     {"pageSettings", "cài đặt", "settings", "设置"},
     {"chinese", "中文", "中文", "中文"},
     {"back", "quay lại", "back", "返回"},
+    {"loadingDictionary", "đang tải từ điển…", "loading the dictionary…", "正在加载词典…"},
+    {"coreFailed", "không tải được bộ gõ. hãy tải lại trang.", "the keyboard engine could not load. reload the page.", "无法加载输入引擎。请重新加载页面。"},
+    {"exit", "thoát", "exit", "退出"},
+    {"inputModeLabel", "kiểu gõ", "input", "输入方式"},
+    {"inputModeProfile", "kiểu gõ cho {name}", "input for {name}", "{name} 的输入方式"},
 };
 // Interface languages: Vietnamese (default), English and Chinese.
 inline std::string supportedLanguage(const std::string &value) { return value == "en" || value == "zh" ? value : "vi"; }

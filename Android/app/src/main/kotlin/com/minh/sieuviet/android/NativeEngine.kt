@@ -3,8 +3,8 @@ package com.minh.sieuviet.android
 import org.json.JSONObject
 
 /** Own one shared Swift engine, confined to the IME's main thread. */
-class NativeEngine(output: Int, private val input: Int) : AutoCloseable {
-    private var handle = nativeCreate(output)
+class NativeEngine(output: Int, private val input: Int, mode: Int = 0) : AutoCloseable {
+    private var handle = nativeCreate(output, mode)
     val state: JSONObject get() { check(handle != 0L); return JSONObject(nativeState(handle, input)) }
     data class Effect(val kind: Int, val text: String)
     fun dispatch(command: Int, argument: Int = 0): Effect {
@@ -16,7 +16,7 @@ class NativeEngine(output: Int, private val input: Int) : AutoCloseable {
     fun observeKey(usage: Int, down: Boolean, timestamp: Double, other: Boolean): Boolean {
         check(handle != 0L); return nativeObserveKey(handle, usage, down, timestamp, other)
     }
-    private external fun nativeCreate(output: Int): Long
+    private external fun nativeCreate(output: Int, mode: Int): Long
     private external fun nativeDestroy(handle: Long)
     private external fun nativeDispatch(handle: Long, command: Int, argument: Int): Int
     private external fun nativeObserveKey(handle: Long, usage: Int, down: Boolean, timestamp: Double, other: Boolean): Boolean
