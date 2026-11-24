@@ -18,6 +18,12 @@ WAS_ACTIVE=false
 if "$PROJECT_ROOT/build/input-source" current | /usr/bin/grep -Fq "Current input source: com.minh.inputmethod.VietMoi"; then
   WAS_ACTIVE=true
 fi
+# Replacing the bundle makes macOS drop the source from the enabled list, so
+# remember whether it was enabled and enable it again after registering.
+WAS_ENABLED=false
+if "$PROJECT_ROOT/build/input-source" enabled | /usr/bin/grep -Fq "Enabled: true"; then
+  WAS_ENABLED=true
+fi
 mkdir -p "$HOME/Library/Input Methods"
 STAGING_ROOT="$(mktemp -d "$HOME/Library/Input Methods/.VietMoi-install.XXXXXX")"
 trap 'rm -rf "$STAGING_ROOT"' EXIT
@@ -28,15 +34,20 @@ trap 'rm -rf "$STAGING_ROOT"' EXIT
 mkdir -p "$HOME/Library/Input Methods"
 # Stop only this input method during an update; never restart system services.
 /usr/bin/pkill -x VietMoi 2>/dev/null || true
-if [ -e "$DESTINATION" ]; then mv "$DESTINATION" "$STAGING_ROOT/previous.app"; fi
-if ! mv "$STAGING_ROOT/VietMoi.app" "$DESTINATION"; then
-  if [ -e "$STAGING_ROOT/previous.app" ]; then mv "$STAGING_ROOT/previous.app" "$DESTINATION"; fi
-  exit 1
+# Update the bundle in place: moving or deleting it makes macOS drop siêu việt
+# from the enabled input sources. --delete removes files left from older builds,
+# which would otherwise break the code signature.
+if [ -d "$DESTINATION" ]; then
+  /usr/bin/rsync -a --delete "$STAGING_ROOT/VietMoi.app/" "$DESTINATION/"
+else
+  mv "$STAGING_ROOT/VietMoi.app" "$DESTINATION"
 fi
 /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "$DESTINATION"
 "$PROJECT_ROOT/build/input-source" register "$DESTINATION" > /dev/null
 if [ "$WAS_ACTIVE" = true ]; then
   "$PROJECT_ROOT/build/input-source" select > /dev/null
+elif [ "$WAS_ENABLED" = true ]; then
+  "$PROJECT_ROOT/build/input-source" enable > /dev/null
 fi
 mkdir -p "$HOME/Applications"
 LAUNCHER="$HOME/Applications/siêu việt.app"

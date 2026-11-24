@@ -408,8 +408,14 @@ final class InputSession {
     private func acceptSuggestion(_ index: Int, client: IMKTextInput) -> Bool {
         let values = suggestions(client)
         guard values.indices.contains(index) else { return false }
-        if currentProfile?.language == .vietnamese { apply(engine.finishPartial(), sender: client) }
-        commit(values[index] + " ", client: client)
+        // Replace the marked syllable with the whole word in one insertion. Committing
+        // the syllable and then inserting the suffix let some hosts place the suffix
+        // before the syllable ("in x" instead of "xin").
+        var word = values[index] + " "
+        if currentProfile?.language == .vietnamese, case .commit(let syllable) = engine.finishPartial() {
+            word = (syllable + word).precomposedStringWithCanonicalMapping
+        }
+        commit(word, client: client)
         refresh(client)
         return true
     }

@@ -29,6 +29,11 @@ for source in sources {
         Unmanaged<CFString>.fromOpaque($0).takeUnretainedValue() as String
     } ?? identifier
     print("Found input source: \(name)")
+    if action == "enabled" {
+        let enabled = TISGetInputSourceProperty(source, kTISPropertyInputSourceIsEnabled)
+            .map { CFBooleanGetValue(Unmanaged<CFBoolean>.fromOpaque($0).takeUnretainedValue()) } ?? false
+        print("Enabled: \(enabled)")
+    }
     if action == "enable" || action == "select" || action == "select-us" || action == "prepare-update" {
         let enabled = TISEnableInputSource(source)
         print("TISEnableInputSource: \(enabled)")

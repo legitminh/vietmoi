@@ -841,6 +841,16 @@ _ = multilingualKey(56, type: .flagsChanged)
 expect(languageProfiles.active.language == .english, "The next Shift tap reaches English")
 multilingualLetters("ok")
 expect(document.text == "hello hel你好中国ok", "English text remains literal after switching")
+let vietnameseID = languageProfiles.profiles.first { $0.language == .vietnamese }!.id
+languageProfiles.update(vietnameseID, input: .asciiPlus, suggestionsEnabled: true)
+languageProfiles.select(vietnameseID)
+document.text = ""; document.selection = NSRange(location: 0, length: 0); document.mark = NSRange(location: NSNotFound, length: 0)
+multilingualLetters("x")
+let syllable = document.text
+expect(!syllable.isEmpty && document.mark.location != NSNotFound, "A Vietnamese initial is marked text")
+expect(multilingualKey(48), "Tab accepts a Vietnamese completion")
+expect(document.text.hasPrefix(syllable) && document.text.count > syllable.count + 1 && document.text.hasSuffix(" ")
+       && document.mark.location == NSNotFound, "The completion follows the typed syllable in one word, not before it")
 multilingual.deactivateServer(document)
 print("Passed \(checks) native document-session and Shift interaction checks.")
 
