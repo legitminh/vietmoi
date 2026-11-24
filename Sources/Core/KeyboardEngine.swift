@@ -1,4 +1,6 @@
+#if !hasFeature(Embedded)
 import Foundation
+#endif
 
 enum Phase: Int, CaseIterable {
     case initial, onglideCoreVowel, final, tone
@@ -152,6 +154,7 @@ struct KeyboardEngine {
     }
 }
 
+#if !hasFeature(Embedded)
 struct CommittedCycle {
     let text: String
     let range: NSRange
@@ -161,3 +164,4 @@ struct CommittedCycle {
         selection.location == NSMaxRange(range) && actualText == text
     }
 }
+#endif

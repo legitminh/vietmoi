@@ -1,4 +1,6 @@
+#if !hasFeature(Embedded)
 import Foundation
+#endif
 
 struct PredictionCandidate: Equatable {
     let suffix: String

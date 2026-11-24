@@ -1,3 +1,4 @@
+#if !hasFeature(Embedded)
 import Foundation
 
 typealias CompletionSubmit = (@escaping () -> [String], @escaping ([String]) -> Void) -> Operation?
@@ -25,3 +26,4 @@ enum CompletionScheduler {
         return operation
     }
 }
+#endif

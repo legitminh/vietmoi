@@ -1,4 +1,6 @@
+#if !hasFeature(Embedded)
 import Foundation
+#endif
 
 // Small document boundary shared by the in-app editor and the keyboard extension.
 // UIKit lives in adapters; phonetic construction remains in the existing engine.
@@ -87,7 +89,7 @@ extension MobileTextDocument {
     var pending: Bool { engine.isPending || chinese.isPending }
     var suggestionsEnabled: Bool { keyboardLanguage == .chinese || profile.suggestionsEnabled }
     var suggestions: [String] {
-        keyboardLanguage == .chinese ? chinese.visibleCandidates.map(\.text) : suggestionsEnabled ? cachedSuggestions : []
+        keyboardLanguage == .chinese ? chinese.visibleCandidates.map({ $0.text }) : suggestionsEnabled ? cachedSuggestions : []
     }
     var completedBasis: VietnamesePhoneticBasis? { engine.lastCommittedBasis }
     init(document: MobileTextDocument, defaults: UserDefaults = .standard,
@@ -291,8 +293,8 @@ extension MobileTextDocument {
             guard chinesePredictionKey != code else { return }
             chineseRequest?.cancel(); chinesePredictionKey = code
             let dictionary = chinese.dictionary
-            chineseRequest = CompletionScheduler.submit({ dictionary.candidates(for: code, completing: true) }, receive: { [weak self] values in
-                guard let self = self, self.chinesePredictionKey == code, self.keyboardLanguage == .chinese else { return }
+            chineseRequest = CompletionScheduler.submit({ dictionary.candidates(for: code, completing: true) }, receive: whenAlive { (self: MobileInputSession, values: [ShuangpinCandidate]) in
+                guard self.chinesePredictionKey == code, self.keyboardLanguage == .chinese else { return }
                 self.chinese.applyCompletions(values, for: code)
                 self.onChange?()
             })
@@ -308,12 +310,21 @@ extension MobileTextDocument {
         let complete = englishWords
         predictionRequest = submitCompletion({
             language == .english ? EnglishCompletion.suffixes(context: context, complete: complete)
-                : VietnamesePredictionEngine.suggestions(context: context, prefix: prefix, limit: 16).map(\.suffix)
-        }, { [weak self] values in
-            guard let self = self, self.predictionKey == key else { return }
+                : VietnamesePredictionEngine.suggestions(context: context, prefix: prefix, limit: 16).map({ $0.suffix })
+        }, whenAlive { (self: MobileInputSession, values: [String]) in
+            guard self.predictionKey == key else { return }
             self.cachedSuggestions = values
             self.onChange?()
         })
+    }
+    /// Late completion results reach only a live session. Embedded Swift (the web
+    /// demo) has no weak references; its page keeps one session for its whole life.
+    private func whenAlive<Value>(_ body: @escaping (MobileInputSession, Value) -> Void) -> (Value) -> Void {
+        #if hasFeature(Embedded)
+        return { value in body(self, value) }
+        #else
+        return { [weak self] value in if let self = self { body(self, value) } }
+        #endif
     }
     func moveCursorVertically(by lines: Int) {
         guard lines != 0 else { return }

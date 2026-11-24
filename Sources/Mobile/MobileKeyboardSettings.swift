@@ -1,9 +1,11 @@
+#if !hasFeature(Embedded)
 import Foundation
+#endif
 
 // The app-owned snapshot the keyboard reads: the managed keyboard list, the
 // app's selected keyboard and the interface language. A Shift tap in the
 // keyboard moves to the next keyboard without writing this snapshot.
-struct MobileKeyboardSettings: Codable, Equatable {
+struct MobileKeyboardSettings: Equatable {
     static let inputTypes: [InputType] = [.asciiPlus, .grid4x8]
     // Stable identities for lists created from older single-keyboard snapshots.
     static let vietnameseID = UUID(uuidString: "5F1E7C2A-0000-4000-8000-000000000001")!
@@ -64,6 +66,11 @@ struct MobileKeyboardSettings: Codable, Equatable {
         return Self(profiles: list, activeID: list.contains { $0.id == activeID } ? activeID : list[0].id,
                     language: AppCopy.supportedLanguage(language))
     }
+}
+
+// Stored snapshots. The web demo hands its list to the session directly.
+#if !hasFeature(Embedded)
+extension MobileKeyboardSettings: Codable {
     private enum CodingKeys: String, CodingKey {
         case profiles, activeID, language, input, output
         case inputMode, suggestionsEnabled, keyboardLanguage, completionByLanguage  // 0.15 single-keyboard snapshots
@@ -98,3 +105,4 @@ struct MobileKeyboardSettings: Codable, Equatable {
         try values.encode(language, forKey: .language)
     }
 }
+#endif

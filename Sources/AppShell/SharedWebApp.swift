@@ -71,7 +71,8 @@ final class SharedWebApp: NSObject, WKURLSchemeHandler {
             task.didFailWithError(URLError(.fileDoesNotExist)); return
         }
         let types = ["html": "text/html; charset=utf-8", "js": "text/javascript; charset=utf-8", "css": "text/css; charset=utf-8",
-                     "json": "application/json", "svg": "image/svg+xml", "png": "image/png", "woff2": "font/woff2"]
+                     "json": "application/json", "svg": "image/svg+xml", "png": "image/png", "woff2": "font/woff2",
+                     "wasm": "application/wasm", "txt": "text/plain; charset=utf-8"]
         let headers = ["Content-Type": types[file.pathExtension] ?? "application/octet-stream", "Content-Length": String(data.count)]
         guard let response = HTTPURLResponse(url: url, statusCode: 200, httpVersion: "HTTP/1.1", headerFields: headers) else {
             task.didFailWithError(URLError(.badServerResponse)); return

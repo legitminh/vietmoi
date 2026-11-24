@@ -1,4 +1,6 @@
+#if !hasFeature(Embedded)
 import Foundation
+#endif
 
 // Microsoft (微软) double Pinyin. Each syllable uses an initial key and a
 // final key; zero initials use o (aa/ee are accepted too). No tones are typed.
@@ -131,11 +133,16 @@ struct ShuangpinCandidate: Equatable {
 }
 
 final class ShuangpinDictionary {
+    #if !hasFeature(Embedded)
     static let shared: ShuangpinDictionary = {
         let url = Bundle.main.url(forResource: "pinyin_simp.dict", withExtension: "yaml", subdirectory: "Chinese")
         return ShuangpinDictionary(contents: url.flatMap { try? String(contentsOf: $0, encoding: .utf8) } ?? "")
     }()
-    private struct Entry {
+    #else
+    /// Embedded hosts (the web demo) load the dictionary themselves and pass it to ShuangpinEngine.
+    static let shared = ShuangpinDictionary(contents: "")
+    #endif
+    fileprivate struct Entry {
         let candidate: ShuangpinCandidate
         let weight: Int
     }
@@ -146,26 +153,14 @@ final class ShuangpinDictionary {
     private let completionLock = NSLock()
     var isAvailable: Bool { !entries.isEmpty }
 
-    init(contents: String) {
-        for line in contents.split(separator: "\n") {
-            let fields = line.split(separator: "\t")
-            guard fields.count >= 2 else { continue }
-            let syllables = fields[1].split(separator: " ").map(String.init)
-            var codes = [""]
-            for syllable in syllables {
-                let alternatives = MicrosoftShuangpin.codes(for: syllable)
-                codes = codes.flatMap { prefix in alternatives.map { prefix + $0 } }
-            }
-            let entry = Entry(candidate: ShuangpinCandidate(text: String(fields[0]), pinyin: String(fields[1])),
-                              weight: fields.count > 2 ? Int(fields[2]) ?? 0 : 0)
-            for code in Set(codes) where !code.isEmpty { entries[code, default: []].append(entry) }
-        }
-        sortedCodes = entries.keys.sorted()
-        for key in Array(entries.keys) {
-            entries[key]?.sort {
-                $0.weight == $1.weight ? $0.candidate.text < $1.candidate.text : $0.weight > $1.weight
-            }
-        }
+    convenience init(contents: String) {
+        let builder = ShuangpinDictionaryBuilder(contents: contents)
+        while !builder.step(Int.max) {}
+        self.init(builder)
+    }
+    fileprivate init(_ builder: ShuangpinDictionaryBuilder) {
+        entries = builder.entries
+        sortedCodes = builder.sortedCodes
     }
 
     private func completionCandidates(for code: String) -> [ShuangpinCandidate] {
@@ -204,7 +199,7 @@ final class ShuangpinDictionary {
 
     func candidates(for code: String, completing: Bool = false) -> [ShuangpinCandidate] {
         guard !code.isEmpty else { return [] }
-        var result = code.count % 2 == 0 ? entries[code, default: []].map(\.candidate) : []
+        var result = code.count % 2 == 0 ? entries[code, default: []].map({ $0.candidate }) : []
         if completing {
             let predictions = completionCandidates(for: code)
             result = Array(result.prefix(5)) + predictions.prefix(4) + result.dropFirst(5) + predictions.dropFirst(4)
@@ -212,7 +207,7 @@ final class ShuangpinDictionary {
         // Permit sentences absent from the phrase dictionary by joining the
         // longest known phrases. Exact dictionary phrases retain priority.
         if result.isEmpty, code.count > 2, code.count % 2 == 0, let parts = segments(code) {
-            result = [ShuangpinCandidate(text: parts.map(\.text).joined(), pinyin: parts.map(\.pinyin).joined(separator: " "))]
+            result = [ShuangpinCandidate(text: parts.map({ $0.text }).joined(), pinyin: parts.map({ $0.pinyin }).joined(separator: " "))]
         }
         var seen = Set<String>()
         return result.filter { seen.insert($0.text).inserted }
@@ -239,6 +234,102 @@ final class ShuangpinDictionary {
         }
         misses.insert(code)
         return nil
+    }
+}
+
+/// Builds a ShuangpinDictionary in bounded steps, so a host without threads (the web
+/// demo) can spread the work over idle time. init(contents:) runs the same steps at once.
+final class ShuangpinDictionaryBuilder {
+    private let contents: String
+    private var position: String.Index
+    fileprivate var entries: [String: [ShuangpinDictionary.Entry]] = [:]
+    fileprivate var sortedCodes: [String] = []
+    private var keys: [String] = []
+    private var sortedLists = 0
+    /// Codes sorted in runs, then merged pairwise, so no step sorts them all at once.
+    private var runs: [[String]] = []
+    private var sortedRuns = 0
+    private enum Phase { case reading, sortingLists, sortingRuns, merging }
+    private var phase = Phase.reading
+    private(set) var dictionary: ShuangpinDictionary? = nil
+
+    init(contents: String) {
+        self.contents = contents
+        position = contents.startIndex
+    }
+
+    /// Does up to `budget` units of work (a line, a candidate list or a run of codes).
+    /// Returns true once `dictionary` is ready.
+    func step(_ budget: Int) -> Bool {
+        var work = 0
+        while dictionary == nil && work < budget {
+            switch phase {
+            case .reading:
+                guard position < contents.endIndex else {
+                    keys = Array(entries.keys)
+                    phase = .sortingLists
+                    continue
+                }
+                let end = contents.utf8[position...].firstIndex(of: UInt8(ascii: "\n")) ?? contents.endIndex
+                add(contents[position..<end])
+                position = end < contents.endIndex ? contents.index(after: end) : end
+            case .sortingLists:
+                guard sortedLists < keys.count else {
+                    runs = stride(from: 0, to: keys.count, by: 2048).map { Array(keys[$0..<min($0 + 2048, keys.count)]) }
+                    phase = .sortingRuns
+                    continue
+                }
+                entries[keys[sortedLists]]?.sort {
+                    $0.weight == $1.weight ? $0.candidate.text < $1.candidate.text : $0.weight > $1.weight
+                }
+                sortedLists += 1
+            case .sortingRuns:
+                guard sortedRuns < runs.count else { phase = .merging; continue }
+                runs[sortedRuns].sort()
+                sortedRuns += 1
+                work += 99   // a run is about a hundred lines' work
+            case .merging:
+                guard runs.count > 1 else {
+                    sortedCodes = runs.first ?? []
+                    runs = []; keys = []
+                    dictionary = ShuangpinDictionary(self)
+                    continue
+                }
+                // Merge the two shortest runs, keeping each step's work small.
+                runs.sort { $0.count > $1.count }
+                let right = runs.removeLast(), left = runs.removeLast()
+                work += (left.count + right.count) / 40
+                runs.append(Self.merge(left, right))
+            }
+            work += 1
+        }
+        return dictionary != nil
+    }
+
+    private static func merge(_ left: [String], _ right: [String]) -> [String] {
+        var result: [String] = []
+        result.reserveCapacity(left.count + right.count)
+        var i = 0, j = 0
+        while i < left.count && j < right.count {
+            if right[j] < left[i] { result.append(right[j]); j += 1 } else { result.append(left[i]); i += 1 }
+        }
+        result.append(contentsOf: left[i...])
+        result.append(contentsOf: right[j...])
+        return result
+    }
+
+    private func add(_ line: Substring) {
+        let fields = line.split(separator: "\t")
+        guard fields.count >= 2 else { return }
+        let syllables = fields[1].split(separator: " ").map(String.init)
+        var codes = [""]
+        for syllable in syllables {
+            let alternatives = MicrosoftShuangpin.codes(for: syllable)
+            codes = codes.flatMap { prefix in alternatives.map { prefix + $0 } }
+        }
+        let entry = ShuangpinDictionary.Entry(candidate: ShuangpinCandidate(text: String(fields[0]), pinyin: String(fields[1])),
+                                              weight: fields.count > 2 ? Int(fields[2]) ?? 0 : 0)
+        for code in Set(codes) where !code.isEmpty { entries[code, default: []].append(entry) }
     }
 }
 

@@ -1,4 +1,6 @@
+#if !hasFeature(Embedded)
 import Foundation
+#endif
 
 enum KeyboardCursorMovement {
     static func verticalOffset(before: String, after: String, lines: Int) -> Int {

@@ -1,4 +1,6 @@
+#if !hasFeature(Embedded)
 import Foundation
+#endif
 
 enum TouchKeyboardSymbols {
     static let pages = [["1234567890", "-/:;()$&@\"", ".,?!'[]_"],

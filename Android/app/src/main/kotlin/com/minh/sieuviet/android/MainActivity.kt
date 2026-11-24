@@ -63,7 +63,8 @@ class MainActivity : Activity() {
 
     private fun mime(path: String) = when (path.substringAfterLast('.')) {
         "html" -> "text/html"; "js" -> "text/javascript"; "css" -> "text/css"; "json" -> "application/json"
-        "svg" -> "image/svg+xml"; "png" -> "image/png"; "woff2" -> "font/woff2"; else -> "application/octet-stream"
+        "svg" -> "image/svg+xml"; "png" -> "image/png"; "woff2" -> "font/woff2"
+        "wasm" -> "application/wasm"; "txt" -> "text/plain"; else -> "application/octet-stream"
     }
 
     private inner class Bridge {

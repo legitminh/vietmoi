@@ -1,0 +1,58 @@
+name: web core (WebAssembly)
+# Rebuilds the WebAssembly core whenever the shared engine changes, runs the smoke test,
+# and (on main) asks sieuviet.site to redeploy with the new core.
+on:
+  push:
+    paths:
+      - Sources/Core/**
+      - Sources/Mobile/**
+      - Web/**
+      - Resources/Chinese/**
+      - scripts/build-wasm.py
+      - scripts/install-swift-wasm.sh
+      - .github/workflows/web-core.yml
+  pull_request:
+    paths:
+      - Sources/Core/**
+      - Sources/Mobile/**
+      - Web/**
+      - Resources/Chinese/**
+      - scripts/build-wasm.py
+      - scripts/install-swift-wasm.sh
+      - .github/workflows/web-core.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  wasm:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.swift-wasm
+            ~/.swiftpm
+            ~/.config/swiftpm
+          key: swift-wasm-6.4.2-${{ runner.os }}
+      - run: scripts/install-swift-wasm.sh
+      - run: python3 scripts/build-wasm.py --output build/web-core
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: node Web/Tests/smoke.mjs build/web-core/sieuviet.wasm build/web-core/pinyin_simp.txt
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: web-core
+          path: build/web-core
+          if-no-files-found: error
+      - name: redeploy sieuviet.site
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          TOKEN: ${{ secrets.SITE_DISPATCH_TOKEN }}
+        run: |
+          if [ -z "$TOKEN" ]; then echo "SITE_DISPATCH_TOKEN is not set; skipping"; exit 0; fi
+          curl -fsS -X POST -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/legitminh/sieuviet.site/dispatches \
+            -d "{\"event_type\":\"core-changed\",\"client_payload\":{\"sha\":\"$GITHUB_SHA\"}}"

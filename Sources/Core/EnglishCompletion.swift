@@ -1,4 +1,6 @@
+#if !hasFeature(Embedded)
 import Foundation
+#endif
 
 enum EnglishCompletion {
     static func suffixes(context: String, complete: (String) -> [String], limit: Int = 9) -> [String] {
