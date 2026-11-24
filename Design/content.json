@@ -574,21 +574,6 @@
     "en": "simplified chinese",
     "zh": "简体中文"
   },
-  "suggestionsHelp.english": {
-    "vi": "gợi ý hoàn tất từ tiếng anh. tab hoặc chạm để chọn gợi ý.",
-    "en": "suggest english word completions. tab or a tap accepts a suggestion.",
-    "zh": "建议英语单词补全。按 tab 或轻点接受建议。"
-  },
-  "suggestionsHelp.chinese": {
-    "vi": "gợi ý hoàn tất từ và cụm từ từ các phím đã nhập. tắt vẫn giữ danh sách chữ hán để chuyển đổi.",
-    "en": "complete chinese words and phrases from partial input. conversion candidates remain available when off.",
-    "zh": "根据已输入的按键补全词和短语。关闭后仍保留汉字转换候选。"
-  },
-  "suggestionsHelp.vietnamese": {
-    "vi": "hiện phần còn lại của từ hoặc cụm từ phía trên bàn phím. tab hoặc chạm để chọn gợi ý; dấu cách chỉ gõ dấu cách.",
-    "en": "show word and phrase suffixes above the keyboard. tab or a tap accepts a suggestion; space only types a space.",
-    "zh": "在键盘上方显示词或短语的剩余部分。按 tab 或轻点接受建议；空格只输入空格。"
-  },
   "shiftTapHelp": {
     "vi": "nhấn nhanh một mình để đổi bàn phím. giữ hoặc kết hợp phím khác để dùng shift bình thường.",
     "en": "tap alone for the next keyboard. hold or combine with another key for normal shift.",
