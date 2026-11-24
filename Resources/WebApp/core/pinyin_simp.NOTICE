@@ -1,0 +1,4 @@
+The unmodified pinyin_simp.dict.yaml dictionary is from rime/rime-pinyin-simp,
+https://github.com/rime/rime-pinyin-simp, distributed under Apache License 2.0.
+It is derived from the Android Open Source Project PinyinIME dictionary.
+See the accompanying LICENSE. The app uses this dictionary offline.

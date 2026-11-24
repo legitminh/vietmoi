@@ -78,7 +78,8 @@ int main(int argc, char **argv) {
         { std::istringstream file("version=2\nlanguage=en\nactive=B\nkeyboard=A,vi,grid4x8,quốc ngữ,Grid, phở\nkeyboard=B,en,qwerty,literal,English\nkeyboard=C,vi,ascii+,sieuviet,Mine\n");
           auto settings = sv::parseSettings(file);
           check(settings.keyboards.size() == 3 && settings.keyboards[0].name == "Grid, phở" && settings.keyboards[0].input == 1 && settings.keyboards[0].output == 1, "version 2 list");
-          check(sv::formatSettings(settings) == "version=2\nlanguage=en\nactive=B\nkeyboard=A,vi,grid4x8,quốc ngữ,Grid, phở\nkeyboard=B,en,qwerty,literal,English\nkeyboard=C,vi,ascii+,sieuviet,Mine\n", "version 2 round trip");
+          check(settings.keyboards[0].mode == 0 && settings.keyboards[2].mode == 0, "version 2 keyboards spell with siêu việt input");
+          check(sv::formatSettings(settings) == "version=3\nlanguage=en\nactive=B\nkeyboard=A,vi,grid4x8,sieuviet,quốc ngữ,Grid, phở\nkeyboard=B,en,qwerty,sieuviet,literal,English\nkeyboard=C,vi,ascii+,sieuviet,sieuviet,Mine\n", "version 2 upgrades to version 3");
           Document doc; sv::Session session(core, doc, settings);
           check(session.keyboard().id == "B" && session.ascii(), "active keyboard opens");
           tap(session); check(session.keyboard().id == "C" && !session.ascii(), "tap moves to the next keyboard");
@@ -90,6 +91,14 @@ int main(int argc, char **argv) {
           check(reopened.configure(chosen) && reopened.keyboard().id == "A", "a keyboard selected in settings opens");
           auto edited = chosen; edited.keyboards[1].name = "Anh";
           tap(reopened); check(reopened.configure(edited) && reopened.keyboard().id == "B", "an edit keeps the current keyboard"); }
+        { std::istringstream file("version=3\nlanguage=vi\nactive=Q\nkeyboard=Q,vi,ascii+,quốc ngữ,quốc ngữ,Quốc, ngữ\nkeyboard=S,vi,ascii+,quốc ngữ,sieuviet,Mixed\n");
+          auto settings = sv::parseSettings(file);
+          check(settings.keyboards.size() == 2 && settings.keyboards[0].mode == 1 && settings.keyboards[0].output == 1 && settings.keyboards[0].name == "Quốc, ngữ"
+                && settings.keyboards[1].mode == 1 && settings.keyboards[1].output == 0, "version 3 input mode");
+          std::istringstream again(sv::formatSettings(settings)); check(sv::parseSettings(again) == settings, "version 3 round trip");
+          Document doc; sv::Session session(core, doc, settings);
+          type(session,"qlcd"); check(doc.text == "quốc ", "quốc ngữ input mode types quốc ngữ spelling");
+          tap(session); type(session,"zses"); check(doc.text == "quốc za ", "quốc ngữ input reaches siêu việt output"); }
         { std::istringstream file("version=1\ninput=1\noutput=1\nlanguage=vi\n");
           auto list = sv::keyboardList(sv::parseSettings(file));
           check(list.size() == 2 && list[0].input == 1 && list[0].output == 1 && list[1].literal(), "version 1 migrates to [Vietnamese, English]"); }

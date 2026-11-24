@@ -10,7 +10,7 @@ import kotlin.math.min
 class EditorSession(private val connection: InputConnection, val profile: KeyboardProfile,
                     private val info: EditorInfo, ascii: Boolean = false,
                     start: Int = info.initialSelStart, end: Int = info.initialSelEnd) : AutoCloseable {
-    private val engine = NativeEngine(profile.output, profile.input)
+    private val engine = NativeEngine(profile.output, profile.input, if (profile.literal) 0 else profile.mode)
     /** A Shift tap or the mode key moves to the next keyboard; the owner replaces this session. */
     var onNextKeyboard: (() -> Unit)? = null
     val state: JSONObject get() = engine.state

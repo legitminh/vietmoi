@@ -23,9 +23,9 @@ static jstring string(JNIEnv *env, const std::vector<char> &bytes, int64_t lengt
     return result;
 }
 
-extern "C" JNIEXPORT jlong JNICALL Java_com_minh_sieuviet_android_NativeEngine_nativeCreate(JNIEnv *env, jobject, jint output) {
+extern "C" JNIEXPORT jlong JNICALL Java_com_minh_sieuviet_android_NativeEngine_nativeCreate(JNIEnv *env, jobject, jint output, jint mode) {
     if (sv_engine_abi_version() != 1) { fail(env, "Incompatible Sieuviet engine ABI"); return 0; }
-    sv_engine_t handle = sv_engine_create(output);
+    sv_engine_t handle = sv_engine_create_with_input(output, mode);
     if (!handle) fail(env, "Invalid output configuration");
     return static_cast<jlong>(reinterpret_cast<uintptr_t>(handle));
 }

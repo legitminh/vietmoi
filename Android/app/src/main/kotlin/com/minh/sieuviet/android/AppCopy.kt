@@ -140,6 +140,11 @@ object AppCopy {
         "pageSettings" to "cài đặt",
         "chinese" to "中文",
         "back" to "quay lại",
+        "loadingDictionary" to "đang tải từ điển…",
+        "coreFailed" to "không tải được bộ gõ. hãy tải lại trang.",
+        "exit" to "thoát",
+        "inputModeLabel" to "kiểu gõ",
+        "inputModeProfile" to "kiểu gõ cho {name}",
     )
     private val english = mapOf<String, String>(
         "tagline" to "vietnamese, one choice at a time.",
@@ -271,6 +276,11 @@ object AppCopy {
         "pageSettings" to "settings",
         "chinese" to "中文",
         "back" to "back",
+        "loadingDictionary" to "loading the dictionary…",
+        "coreFailed" to "the keyboard engine could not load. reload the page.",
+        "exit" to "exit",
+        "inputModeLabel" to "input",
+        "inputModeProfile" to "input for {name}",
     )
     private val chinese = mapOf<String, String>(
         "tagline" to "越南语，一次一个选择。",
@@ -402,5 +412,10 @@ object AppCopy {
         "pageSettings" to "设置",
         "chinese" to "中文",
         "back" to "返回",
+        "loadingDictionary" to "正在加载词典…",
+        "coreFailed" to "无法加载输入引擎。请重新加载页面。",
+        "exit" to "退出",
+        "inputModeLabel" to "输入方式",
+        "inputModeProfile" to "{name} 的输入方式",
     )
 }

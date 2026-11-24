@@ -22,6 +22,11 @@ private func copy(_ text: String, to buffer: UnsafeMutablePointer<CChar>?, capac
     return Unmanaged.passRetained(SieuvietEngine(output: output)).toOpaque()
 }
 
+@c @implementation public func sv_engine_create_with_input(_ output: Int32, _ inputMode: Int32) -> UnsafeMutableRawPointer? {
+    guard let output = SieuvietEngine.Output(rawValue: output), let input = SieuvietEngine.Input(rawValue: inputMode) else { return nil }
+    return Unmanaged.passRetained(SieuvietEngine(output: output, input: input)).toOpaque()
+}
+
 @c @implementation public func sv_engine_destroy(_ engine: UnsafeMutableRawPointer?) {
     if let engine = engine { Unmanaged<SieuvietEngine>.fromOpaque(engine).release() }
 }

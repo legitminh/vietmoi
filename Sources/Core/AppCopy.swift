@@ -141,6 +141,11 @@ enum AppCopy {
         "pageSettings": "cài đặt",
         "chinese": "中文",
         "back": "quay lại",
+        "loadingDictionary": "đang tải từ điển…",
+        "coreFailed": "không tải được bộ gõ. hãy tải lại trang.",
+        "exit": "thoát",
+        "inputModeLabel": "kiểu gõ",
+        "inputModeProfile": "kiểu gõ cho {name}",
     ]
     private static let english: [String: String] = [
         "tagline": "vietnamese, one choice at a time.",
@@ -272,6 +277,11 @@ enum AppCopy {
         "pageSettings": "settings",
         "chinese": "中文",
         "back": "back",
+        "loadingDictionary": "loading the dictionary…",
+        "coreFailed": "the keyboard engine could not load. reload the page.",
+        "exit": "exit",
+        "inputModeLabel": "input",
+        "inputModeProfile": "input for {name}",
     ]
     private static let chinese: [String: String] = [
         "tagline": "越南语，一次一个选择。",
@@ -403,5 +413,10 @@ enum AppCopy {
         "pageSettings": "设置",
         "chinese": "中文",
         "back": "返回",
+        "loadingDictionary": "正在加载词典…",
+        "coreFailed": "无法加载输入引擎。请重新加载页面。",
+        "exit": "退出",
+        "inputModeLabel": "输入方式",
+        "inputModeProfile": "{name} 的输入方式",
     ]
 }
