@@ -1,0 +1,46 @@
+name: Windows release builds
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: windows-2025
+            architecture: x64
+            msvc: amd64
+          - runner: windows-11-arm
+            architecture: ARM64
+            msvc: arm64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756
+        with:
+          arch: ${{ matrix.msvc }}
+      - uses: SwiftyLab/setup-swift@e5b857b7d88ee612e018b84edb0c90b7c9a34b8e
+        with:
+          swift-version: '6.4.2'
+      - name: Build and test the packaged Swift engine and native adapters
+        shell: pwsh
+        run: ./scripts/build-windows.ps1 -Architecture ${{ matrix.architecture }}
+      - name: Archive package
+        shell: pwsh
+        run: |
+          $release = Get-Content Design/brand.json | ConvertFrom-Json
+          $arch = '${{ matrix.architecture }}'.ToLowerInvariant()
+          $stage = 'build/windows-package-${{ matrix.architecture }}'
+          python scripts/copy-guides.py $stage
+          if ($LASTEXITCODE) { throw "Bilingual guide packaging failed" }
+          Copy-Item ThirdPartyNotices "$stage/ThirdPartyNotices" -Recurse
+          New-Item -ItemType Directory -Force build/releases | Out-Null
+          Compress-Archive -Path "$stage/*" -DestinationPath "build/releases/sieuviet-$($release.version)-windows-$arch.zip"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: windows-${{ matrix.architecture }}
+          path: build/releases/*.zip
+          if-no-files-found: error

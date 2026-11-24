@@ -46,10 +46,14 @@ extension MobileTextDocument {
     // App/extension-local preferences keep mode across text fields and
     // controller recreation without writing to the read-only App Group snapshot.
     private let defaults: UserDefaults
-    private static let asciiModeKey = "mobile.asciiMode.v1"
+    // The keyboard's current list position. A Shift tap moves it without writing
+    // the app's snapshot; a new selection made in the app is adopted.
+    private static let activeKey = "mobile.activeKeyboard.v1"
+    private static let seenKey = "mobile.appActiveKeyboard.v1"
+    private static let legacyASCIIKey = "mobile.asciiMode.v1"
     private var settings: MobileKeyboardSettings
-    private let keyboardLanguages: [KeyboardLanguage]
-    private(set) var keyboardLanguage: KeyboardLanguage
+    private(set) var profile: KeyboardProfile
+    var keyboardLanguage: KeyboardLanguage { profile.language }
     private var chinese: ShuangpinEngine
     private var predictionRequest: Operation?
     private var chineseRequest: Operation?
@@ -69,8 +73,8 @@ extension MobileTextDocument {
     private var editing = false
     private var movingCursor = false
     var onChange: (() -> Void)?
-    var output: OutputType { keyboardLanguage == .chinese ? .simplifiedChinese : keyboardLanguage == .english ? .english : engine.outputType }
-    var input: InputType { keyboardLanguage == .chinese ? .microsoftShuangpin : keyboardLanguage == .english ? .english : settings.input }
+    var output: OutputType { profile.language == .vietnamese ? engine.outputType : profile.outputType }
+    var input: InputType { profile.isLiteral ? .asciiPlus : profile.inputType }
     var rows: [[ASCIIKey]] {
         guard input == .grid4x8 && !ascii else { return ASCIIKeyboardLayout.guideRows }
         return stride(from: 0, to: GridKey.all.count, by: 8).map { start in
@@ -81,54 +85,88 @@ extension MobileTextDocument {
     var phase: Phase { engine.phase }
     var preview: String { keyboardLanguage == .chinese ? chinese.preview : cased(compositionParts) }
     var pending: Bool { engine.isPending || chinese.isPending }
-    var suggestionsEnabled: Bool { keyboardLanguage == .chinese || settings.completionEnabled(for: keyboardLanguage) }
+    var suggestionsEnabled: Bool { keyboardLanguage == .chinese || profile.suggestionsEnabled }
     var suggestions: [String] {
         keyboardLanguage == .chinese ? chinese.visibleCandidates.map(\.text) : suggestionsEnabled ? cachedSuggestions : []
     }
     var completedBasis: VietnamesePhoneticBasis? { engine.lastCommittedBasis }
-    init(document: MobileTextDocument, keyboardLanguages: [KeyboardLanguage] = [.english, .vietnamese, .chinese], defaults: UserDefaults = .standard,
+    init(document: MobileTextDocument, defaults: UserDefaults = .standard,
          settingsProvider: @escaping () -> MobileKeyboardSettings = { .standard },
          chineseDictionary: ShuangpinDictionary = .shared,
          submitCompletion: @escaping CompletionSubmit = CompletionScheduler.submit,
          englishWords: @escaping (String) -> [String] = MobileEnglishCompletion.words) {
         self.document = document
-        self.keyboardLanguages = keyboardLanguages.isEmpty ? [.vietnamese] : keyboardLanguages
         self.submitCompletion = submitCompletion
         self.englishWords = englishWords
         self.chinese = ShuangpinEngine(dictionary: chineseDictionary)
         self.defaults = defaults
         self.settingsProvider = settingsProvider
-        settings = settingsProvider().supported
-        let configured = defaults.string(forKey: "mobile.configuredLanguage.v2")
-        let remembered = defaults.string(forKey: "mobile.keyboardLanguage.v2").flatMap(KeyboardLanguage.init(rawValue:))
-            ?? (defaults.bool(forKey: Self.asciiModeKey) ? .english : settings.keyboardLanguage)
-        let changedRevision = defaults.object(forKey: "mobile.configuredRevision.v2") != nil && defaults.integer(forKey: "mobile.configuredRevision.v2") != settings.selectionRevision
-        keyboardLanguage = changedRevision || (configured != nil && configured != settings.keyboardLanguage.rawValue) ? settings.keyboardLanguage : remembered
-        defaults.set(settings.selectionRevision, forKey: "mobile.configuredRevision.v2")
-        defaults.set(settings.keyboardLanguage.rawValue, forKey: "mobile.configuredLanguage.v2")
-        engine = KeyboardEngine(outputType: settings.output, ascii: keyboardLanguage == .english, inputMode: settings.inputMode)
-        chinese.completionsEnabled = settings.completionEnabled(for: .chinese)
+        let initial = settingsProvider().supported
+        settings = initial
+        profile = Self.resolve(initial, defaults: defaults)
+        engine = Self.engine(for: profile)
+        chinese.completionsEnabled = profile.language == .chinese && profile.suggestionsEnabled
+    }
+    private static func engine(for profile: KeyboardProfile) -> KeyboardEngine {
+        KeyboardEngine(outputType: profile.language == .vietnamese ? profile.outputType : .sieuviet,
+                       ascii: profile.isLiteral, inputMode: profile.inputMode)
+    }
+    private static func resolve(_ settings: MobileKeyboardSettings, defaults: UserDefaults) -> KeyboardProfile {
+        let appActive = settings.activeID.uuidString
+        if defaults.string(forKey: seenKey) != appActive {
+            defaults.set(appActive, forKey: seenKey)
+            // Older keyboards kept only a literal ASCII flag; keep its mode once.
+            if defaults.string(forKey: activeKey) == nil, defaults.bool(forKey: legacyASCIIKey),
+               let english = settings.profiles.first(where: { $0.isLiteral }) {
+                defaults.set(english.id.uuidString, forKey: activeKey)
+                return english
+            }
+            defaults.set(appActive, forKey: activeKey)
+            return settings.active
+        }
+        let local = defaults.string(forKey: activeKey).flatMap(UUID.init(uuidString:))
+        return settings.profiles.first { $0.id == local } ?? settings.active
     }
     func reloadSettings() {
         guard !pending else { return }
         let latest = settingsProvider().supported
         guard latest != settings else { return }
-        if latest.keyboardLanguage != settings.keyboardLanguage || latest.selectionRevision != settings.selectionRevision {
-            keyboardLanguage = latest.keyboardLanguage
-            defaults.set(keyboardLanguage.rawValue, forKey: "mobile.keyboardLanguage.v2")
-            defaults.set(keyboardLanguage.rawValue, forKey: "mobile.configuredLanguage.v2")
-            defaults.set(latest.selectionRevision, forKey: "mobile.configuredRevision.v2")
-        }
         settings = latest
+        useProfile(Self.resolve(latest, defaults: defaults))
+    }
+    private func useProfile(_ next: KeyboardProfile) {
+        guard next != profile || engine.ascii != next.isLiteral else { return }
+        profile = next
+        engine = Self.engine(for: next)
+        chinese.completionsEnabled = next.language == .chinese && next.suggestionsEnabled
         invalidateSuggestions()
-        chinese.completionsEnabled = latest.completionEnabled(for: .chinese)
-        engine = KeyboardEngine(outputType: latest.output, ascii: keyboardLanguage == .english, inputMode: latest.inputMode)
         recentCommit = nil
         scheduleSuggestions()
         onChange?()
     }
+    /// The keyboard a Shift tap moves to.
+    var nextProfile: KeyboardProfile {
+        let index = settings.profiles.firstIndex { $0.id == profile.id } ?? -1
+        return settings.profiles[(index + 1) % settings.profiles.count]
+    }
+    func selectPreviousKeyboard() {
+        edit {
+            let index = settings.profiles.firstIndex { $0.id == profile.id } ?? 0
+            select(settings.profiles[(index - 1 + settings.profiles.count) % settings.profiles.count])
+        }
+    }
+    private func selectNextKeyboard() { select(nextProfile) }
+    private func select(_ next: KeyboardProfile) {
+        finishActiveComposition()
+        defaults.set(next.id.uuidString, forKey: Self.activeKey)
+        profile = next
+        engine = Self.engine(for: next)
+        chinese.completionsEnabled = next.language == .chinese && next.suggestionsEnabled
+        invalidateSuggestions()
+        recentCommit = nil
+    }
     func label(for key: ASCIIKey) -> String? {
-        if key.keyCode == 56 { return "⇧" }
+        if key.keyCode == 56 { return nextProfile.language == .english ? "ABC" : nextProfile.language == .chinese ? "中" : "VIỆT" }
         if keyboardLanguage == .chinese { return MicrosoftShuangpin.keyLabels[key.label] }
         if ascii { return key.label }
         if input == .grid4x8 {
@@ -149,13 +187,7 @@ extension MobileTextDocument {
     func press(_ key: ASCIIKey, letterCase: MobileLetterCase = .lowercase) {
         edit {
             if key.keyCode == 56 {
-                finishActiveComposition()
-                let index = keyboardLanguages.firstIndex(of: keyboardLanguage) ?? 0
-                keyboardLanguage = keyboardLanguages[(index + 1) % keyboardLanguages.count]
-                engine = KeyboardEngine(outputType: settings.output, ascii: keyboardLanguage == .english, inputMode: settings.inputMode)
-                defaults.set(keyboardLanguage == .english, forKey: Self.asciiModeKey)
-                defaults.set(keyboardLanguage.rawValue, forKey: "mobile.keyboardLanguage.v2")
-                invalidateSuggestions()
+                selectNextKeyboard()
                 return
             }
             if keyboardLanguage == .chinese {
@@ -194,10 +226,6 @@ extension MobileTextDocument {
             if keyboardLanguage == .chinese {
                 if chinese.isPending { apply(chinese.choose()) }
                 else { insertLiteral(" ") }
-                return
-            }
-            if (engine.isPending || keyboardLanguage == .english), let suggestion = suggestions.first {
-                acceptSuggestion(suggestion)
                 return
             }
             let hasPreview = !engine.preview.isEmpty
@@ -270,7 +298,7 @@ extension MobileTextDocument {
             })
             return
         }
-        guard settings.completionEnabled(for: keyboardLanguage) else { invalidateSuggestions(); return }
+        guard profile.suggestionsEnabled else { invalidateSuggestions(); return }
         let context = String((document.beforeInput ?? "").suffix(256))
         let prefix = engine.preview
         let language = keyboardLanguage

@@ -799,7 +799,9 @@ let languageSuite = "com.minh.sieuviet.controller.languages.\(UUID().uuidString)
 let languageDefaults = UserDefaults(suiteName: languageSuite)!
 defer { languageDefaults.removePersistentDomain(forName: languageSuite) }
 let languageProfiles = KeyboardProfiles(defaults: languageDefaults)
-languageProfiles.select(languageProfiles.profiles[0].id)
+// The default list is [Vietnamese, English]; add Chinese as the third keyboard.
+languageProfiles.update(languageProfiles.add(), language: .chinese)
+languageProfiles.select(languageProfiles.profiles[1].id)
 let multilingual = InputSession(showGuide: false, profileProvider: { languageProfiles.active }, keyIsDown: { _ in false },
     switchKeyboard: { languageProfiles.selectNext() }, chineseDictionary: dictionary,
     submitCompletion: { work, receive in receive(work()); return nil }, englishWords: { _ in ["hello", "help"] })
@@ -818,6 +820,9 @@ document.text = ""; document.selection = NSRange(location: 0, length: 0); docume
 multilingual.activateServer(document)
 multilingualLetters("hel")
 expect(document.text == "hel", "English typing inserts immediately")
+expect(document.text == "hel", "Suggestions never delay typed characters")
+expect(!multilingualKey(49, " ") || document.text != "hello ", "Space never accepts an English completion")
+document.text = "hel"; document.selection = NSRange(location: 3, length: 0)
 expect(multilingualKey(48) && document.text == "hello ", "Tab accepts an English word completion")
 languageProfiles.update(languageProfiles.active.id, suggestionsEnabled: false)
 multilingualLetters("hel")
@@ -830,7 +835,10 @@ multilingualLetters("vsgo")
 expect(multilingualKey(18, "1") && document.text == "hello hel你好中国", "Chinese number selection commits a candidate")
 _ = multilingualKey(56, type: .flagsChanged, flags: .shift)
 _ = multilingualKey(56, type: .flagsChanged)
-expect(languageProfiles.active.language == .english, "Saved keyboard cycling wraps Chinese to English")
+expect(languageProfiles.active.language == .vietnamese, "Saved keyboard cycling wraps Chinese to the first keyboard")
+_ = multilingualKey(56, type: .flagsChanged, flags: .shift)
+_ = multilingualKey(56, type: .flagsChanged)
+expect(languageProfiles.active.language == .english, "The next Shift tap reaches English")
 multilingualLetters("ok")
 expect(document.text == "hello hel你好中国ok", "English text remains literal after switching")
 multilingual.deactivateServer(document)

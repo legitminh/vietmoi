@@ -1,0 +1,86 @@
+viet.phonetic.basis — four-round construction contract, revision 6
+
+Implementation: Sources/Core/PhoneticBasis.swift
+Inventory: VietnamesePhoneticInventory.sieuviet
+Stored completed value: VietnamesePhoneticBasis (Codable, Equatable)
+The serialized basis field names and tone IDs remain stable.
+
+Rounds:
+1. vietnamese_initial
+2. vietnamese_onglide_and_core_vowel (one typed VietnameseVowelAtom)
+3. vietnamese_final
+4. vietnamese_tone, then commit with exactly one separator space
+
+Example completed basis for Sieuviet răo (standard rau):
+{
+  "vietnamese_initial": "r",
+  "vietnamese_onglide": "",
+  "vietnamese_core_vowel": "ă",
+  "vietnamese_tone": 0,
+  "vietnamese_final": "o"
+}
+
+Tone IDs: 0 ngang, 1 sắc, 2 huyền, 3 hỏi, 4 ngã, 5 nặng.
+Tone keys: s, d, f, j, k, l in that order. The empty final uses e.
+Optional empty atoms are "", not spaces. A chosen core and tone are required.
+Final o (key o) represents /w/ and final i represents /j/. Initial f represents standard
+ph and initial z represents standard gi. The only explicit onglide is w.
+
+The combined round has 24 choices in this exact grid order:
+oo, ă, a, â, iê, e, ê, ơ, o, ô, ư, u, i, wă, wa, wâ, wiê, we, wê, wơ, wo, wi, ươ, uô.
+The 15 bare nuclei include oo (key a); the nine rounded choices exclude wô, wư,
+and wu. ASCII+ uses wê on n and wi on m; p and q are unused in this round.
+Semicolon is ordinary punctuation. This is not a Cartesian product of atoms. Display uses fixed iê/ươ/uô even in open syllables.
+Tone anchors are zero-based within the core: iê:1, ươ:1, uô:1, oo:1; all others:0.
+Tone never attaches to w or a final. Output is normalized to NFC and rejects
+control characters and private-use function-key payloads.
+
+KeyboardEngine.phoneticBasis exposes a draft after the combined vowel round.
+Its ngang value is a neutral preview rather than a selected tone. Round three
+adds the final; round four chooses the tone and completes/commits the basis.
+KeyboardEngine.lastCommittedBasis retains that completed value. InputSession
+keeps it with the committed cycle in bounded in-memory editing history (up to
+128 cycles). There is no persistent typing log.
+
+Backspace undoes one round, including the initial. Space commits the visible
+partial preview followed by one space. A mode switch or host composition flush
+commits the visible partial preview without a separator. These abbreviations
+have no completed basis: missing atoms and an unselected tone are not invented,
+and lastCommittedBasis is nil for a partial commit. Escape and Clear still
+discard the partial cycle, restoring a replaced selection where supported.
+
+ASCIIPlusKeymap binds physical positions to named initial, combined vowel, tone,
+and final atoms. It is Codable with version 6 and may be saved per profile.
+Version-5 default vowels migrate to the 24-choice map while preserving actual
+custom atoms and removed physical positions. A custom binding to an excluded
+rounded atom stays serialized but is unavailable in routing. The final o is unchanged.
+Version-4 default final u moves to o; custom positions follow the atom rename
+without overwriting an existing o binding. Version-3 comma/oo defaults move through semicolon to the current a position. Version-2 defaults migrate to the updated vowel keys, preserving explicit custom
+overrides/removals. The oldest incompatible vowel/tone maps reset to the new rounds,
+retaining applicable initial/final overrides. The registered
+macOS input-source identity is preserved.
+
+No phonotactic filtering is applied. Extra combinations remain available so the
+construction alphabet is not artificially restricted to a lexicon or dialect.
+
+Output mode quốc ngữ (migrated from vietstandard) renders the completed basis
+through StandardVietnamese.render only after the fourth-round tone choice.
+Rounds one through three remain Sieuviet previews in both modes. Early boundaries
+preserve those partial spellings verbatim. Standard conversion never mutates
+the stored basis or infers a missing component.
+
+Normal spelling follows the notes and Wikipedia's Vietnamese alphabet spelling
+section, prioritizing Hanoi coda allophones. Initial f/z -> ph/gi; front-vowel
+c/k, g/gh, ng/ngh and shared gi+i are contextual. The w onglide becomes o before
+a/ă/e, otherwise u; c/k+w becomes qu. Final o (/w/) becomes orthographic o after
+long a/e and u otherwise; short ă becomes a in au/ay. Final i (/j/) becomes y
+after ă/â. Open iê/uô/ươ become ia/ua/ưa; iê becomes yê when closed after u or
+without an initial. Tone stays on the main vowel (hoá/huỷ). Explicit oo is kept.
+Hanoi c/ng following e/ê/i are written ch/nh, with e written a in ach/anh.
+The project keeps its y convention for a standalone i syllable; other unrounded
+consonant+i uses i. Older prototype vowel substitutions and onset-dropping
+exceptions are no longer used.
+
+References:
+https://en.wikipedia.org/wiki/Vietnamese_alphabet#Spelling
+https://en.wikipedia.org/wiki/Vietnamese_phonology#Hanoi_finals

@@ -8,6 +8,9 @@ rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" "$BUILD_DIR/module-cache"
 cp "$PROJECT_ROOT/Resources/Info.plist" "$APP/Contents/Info.plist"
 cp -R "$PROJECT_ROOT/Resources/Chinese" "$APP/Contents/Resources/Chinese"
+cp "$PROJECT_ROOT/Resources/UnitedStatesMode.svg" "$APP/Contents/Resources/UnitedStatesMode.svg"
+rm -rf "$APP/Contents/Resources/WebApp"
+cp -R "$PROJECT_ROOT/Resources/WebApp" "$APP/Contents/Resources/WebApp"
 ARCHITECTURES="${SIEUVIET_MAC_ARCHS:-$(uname -m)}"
 BINARIES=()
 for ARCHITECTURE in $ARCHITECTURES; do
@@ -16,9 +19,10 @@ for ARCHITECTURE in $ARCHITECTURES; do
   BINARY="$BUILD_DIR/macos-$ARCHITECTURE/VietMoi"
 xcrun swiftc -swift-version 5 -O -module-cache-path "$BUILD_DIR/module-cache" \
   -target "$ARCHITECTURE-apple-macosx13.0" -module-name VietMoi \
-  -framework AppKit -framework InputMethodKit -framework Carbon \
+  -framework AppKit -framework InputMethodKit -framework Carbon -framework WebKit \
   "$PROJECT_ROOT"/Sources/Core/*.swift \
   "$PROJECT_ROOT"/Sources/Presentation/*.swift \
+  "$PROJECT_ROOT"/Sources/AppShell/*.swift \
   "$PROJECT_ROOT/Sources/macOS/KeyboardPanel.swift" \
   "$PROJECT_ROOT/Sources/macOS/ASCIIKeyboardView.swift" \
   "$PROJECT_ROOT/Sources/macOS/SettingsWindow.swift" \

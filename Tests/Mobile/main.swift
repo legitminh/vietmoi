@@ -56,13 +56,13 @@ import Foundation
         defer { defaults.removePersistentDomain(forName: suite) }
         let legacy = Data(#"{"input":"grid4x8","output":"quốc ngữ"}"#.utf8)
         let migrated = try! JSONDecoder().decode(MobileKeyboardSettings.self, from: legacy)
-        expect(migrated.language == "vi" && migrated.input == .asciiPlus && migrated.inputMode == .sieuviet && migrated.output == .quocNgu && migrated.suggestionsEnabled, "Old snapshots default to Vietnamese with suggestions without losing input/output")
+        expect(migrated.language == "vi" && migrated.input == .grid4x8 && migrated.inputMode == .sieuviet && migrated.output == .quocNgu && migrated.suggestionsEnabled, "Old snapshots default to Vietnamese with suggestions without losing input/output")
         let english = MobileKeyboardSettings(output: .quocNgu, language: "en", inputMode: .quocNgu)
         expect(try! JSONDecoder().decode(MobileKeyboardSettings.self, from: JSONEncoder().encode(english)) == english, "English persists alongside input/output")
         expect(MobileKeyboardSettings(language: "unknown").supported.language == "vi", "Unsupported language falls back to Vietnamese")
         let doc = TestMobileDocument()
         var settings = MobileKeyboardSettings(suggestionsEnabled: false)
-        let session = MobileInputSession(document: doc, keyboardLanguages: [.english, .vietnamese], defaults: defaults, settingsProvider: { settings })
+        let session = MobileInputSession(document: doc, defaults: defaults, settingsProvider: { settings })
         func setOutput(_ output: OutputType) {
             session.finish()
             settings.output = output
@@ -70,11 +70,14 @@ import Foundation
         }
         let predictionDoc = TestMobileDocument()
         var predictionSettings = MobileKeyboardSettings.standard
-        let predictionSession = MobileInputSession(document: predictionDoc, keyboardLanguages: [.english, .vietnamese], defaults: defaults, settingsProvider: { predictionSettings }, submitCompletion: { work, receive in receive(work()); return nil })
+        let predictionSession = MobileInputSession(document: predictionDoc, defaults: defaults, settingsProvider: { predictionSettings }, submitCompletion: { work, receive in receive(work()); return nil })
         type("x", predictionSession)
         expect(predictionSession.suggestions.first == "in", "Suggestions expose suffixes for the current word")
         predictionSession.space()
-        expect(predictionDoc.text == "xin ", "Space accepts the first current-word suggestion")
+        expect(predictionDoc.text == "x ", "Space only finishes the word and never accepts a suggestion")
+        predictionDoc.text = ""; predictionDoc.selection = NSRange(location: 0, length: 0); predictionSession.documentDidChange()
+        type("x", predictionSession); predictionSession.selectSuggestion(at: 0)
+        expect(predictionDoc.text == "xin ", "Tapping accepts the current-word suggestion")
         predictionDoc.text = "chúc mừng "; predictionDoc.selection = NSRange(location: predictionDoc.text.utf16.count, length: 0)
         predictionSession.documentDidChange()
         expect(predictionSession.suggestions.first == "sinh nhật", "Previous words rank a contextual phrase")
@@ -160,7 +163,7 @@ import Foundation
         type("m", session); setOutput(.sieuviet)
         expect(doc.text == " m" && !session.pending, "Output change keeps unfinished text")
         setOutput(.quocNgu)
-        let restored = MobileInputSession(document: doc, keyboardLanguages: [.english, .vietnamese], defaults: defaults, settingsProvider: { settings })
+        let restored = MobileInputSession(document: doc, defaults: defaults, settingsProvider: { settings })
         expect(restored.output == .quocNgu, "Sessions read the same app-owned output setting")
         doc.text = ""; doc.selection = NSRange(location: 0, length: 0); session.documentDidChange()
         settings = MobileKeyboardSettings(input: .asciiPlus, output: .sieuviet, suggestionsEnabled: false)
@@ -188,14 +191,14 @@ import Foundation
         type("pol", session)
         expect(doc.text == "răo m pol", "ASCII retains letters outside the grid's physical block")
         settings.input = .telex
-        let unsupported = MobileInputSession(document: doc, keyboardLanguages: [.english, .vietnamese], defaults: defaults, settingsProvider: { settings })
-        expect(settings.supported.input == .asciiPlus && unsupported.input == .english, "An unavailable Vietnamese input falls back without changing the active English keyboard")
+        let unsupported = MobileInputSession(document: doc, defaults: defaults, settingsProvider: { settings })
+        expect(settings.supported.input == .asciiPlus && unsupported.ascii, "An unavailable Vietnamese input falls back without changing the active English keyboard")
         // Recreate the session and UserDefaults object, as iOS does for a new
         // host/controller. Only mode should survive, never composition or text.
         let modeDefaults = UserDefaults(suiteName: suite)!
         let otherField = TestMobileDocument()
         otherField.identifier = "mode-second-field"
-        let remembered = MobileInputSession(document: otherField, keyboardLanguages: [.english, .vietnamese], defaults: modeDefaults)
+        let remembered = MobileInputSession(document: otherField, defaults: modeDefaults)
         expect(remembered.ascii && !remembered.pending && remembered.completedBasis == nil,
                "A recreated keyboard restores ASCII without carrying any composition")
         type("hello", remembered)
@@ -205,13 +208,13 @@ import Foundation
         remembered.documentDidChange(); remembered.finish(); remembered.reloadSettings()
         expect(remembered.ascii, "Field changes, dismissal and settings reload preserve ASCII")
         remembered.press(key("Shift"))
-        let vietnamese = MobileInputSession(document: otherField, keyboardLanguages: [.english, .vietnamese], defaults: UserDefaults(suiteName: suite)!)
+        let vietnamese = MobileInputSession(document: otherField, defaults: UserDefaults(suiteName: suite)!)
         expect(!vietnamese.ascii, "Switching back to Vietnamese also persists across recreation")
         type("m", vietnamese)
         vietnamese.press(key("Shift"))
         expect(otherField.text == "m" && vietnamese.ascii && !vietnamese.pending,
                "Persisting a mode change still commits partial Vietnamese text exactly once")
-        let afterPartial = MobileInputSession(document: TestMobileDocument(), keyboardLanguages: [.english, .vietnamese], defaults: defaults)
+        let afterPartial = MobileInputSession(document: TestMobileDocument(), defaults: defaults)
         expect(afterPartial.ascii && !afterPartial.pending && afterPartial.preview.isEmpty,
                "Reopening after a partial word restores only the selected mode")
         var shift = MobileShiftState()
@@ -267,7 +270,7 @@ import Foundation
         let caseDefaults = UserDefaults(suiteName: caseSuite)!
         defer { caseDefaults.removePersistentDomain(forName: caseSuite) }
         let caseDoc = TestMobileDocument()
-        let caseSession = MobileInputSession(document: caseDoc, keyboardLanguages: [.english, .vietnamese], defaults: caseDefaults,
+        let caseSession = MobileInputSession(document: caseDoc, defaults: caseDefaults,
             settingsProvider: { MobileKeyboardSettings(output: .quocNgu, suggestionsEnabled: false) })
         caseSession.press(key("m"), letterCase: .shifted); type("sed", caseSession)
         expect(caseDoc.text == "Má ", "Held Shift capitalizes the Vietnamese initial through tone rendering")
@@ -295,7 +298,7 @@ import Foundation
         expect(caseDoc.text.hasSuffix("Nh "), "Undoing a Caps Lock atom does not leak its casing into a held-Shift atom")
         let modeDoc = TestMobileDocument()
         var modeSettings = MobileKeyboardSettings(output: .quocNgu, inputMode: .quocNgu)
-        let modeSession = MobileInputSession(document: modeDoc, keyboardLanguages: [.english, .vietnamese], defaults: UserDefaults(suiteName: suite + ".mode")!, settingsProvider: { modeSettings })
+        let modeSession = MobileInputSession(document: modeDoc, defaults: UserDefaults(suiteName: suite + ".mode")!, settingsProvider: { modeSettings })
         type("qlcd", modeSession)
         expect(modeDoc.text == "quốc ", "Quốc ngữ input reaches the native mobile document")
         type("rp", modeSession)
@@ -318,29 +321,29 @@ import Foundation
         defer { try? FileManager.default.removeItem(at: directory) }
         let snapshot = directory.appendingPathComponent("KeyboardSettings-v1.json")
         var writer: MobileSettingsStore? = MobileSettingsStore(snapshotURL: snapshot, defaults: defaults)
-        try! writer!.save(MobileKeyboardSettings(output: .quocNgu, inputMode: .quocNgu))
+        try! writer!.save(MobileKeyboardSettings(output: .quocNgu))
         writer = nil
         let reader = MobileSettingsStore(snapshotURL: snapshot, defaults: defaults)
-        expect(reader.load() == MobileKeyboardSettings(output: .quocNgu, inputMode: .quocNgu), "Keyboard reads saved choices after the app object exits")
-        expect((try! Data(contentsOf: snapshot)).count < 512, "Snapshot contains only keyboard and language choices")
+        expect(reader.load() == MobileKeyboardSettings(output: .quocNgu), "Keyboard reads saved choices after the app object exits")
+        let snapshotKeys = Set(((try! JSONSerialization.jsonObject(with: Data(contentsOf: snapshot))) as! [String: Any]).keys)
+        expect(snapshotKeys == ["profiles", "activeID", "language"], "Snapshot contains only the keyboard list, selection and language")
         let reopenedApp = MobileSettingsStore(snapshotURL: snapshot, defaults: defaults)
         try! reopenedApp.save(.standard)
-        expect(reader.current == MobileKeyboardSettings(output: .quocNgu, inputMode: .quocNgu), "Typing uses its cached snapshot without polling app settings")
+        expect(reader.current == MobileKeyboardSettings(output: .quocNgu), "Typing uses its cached snapshot without polling app settings")
         expect(reader.load() == .standard, "A new activation refreshes the snapshot")
         try! FileManager.default.setAttributes([.posixPermissions: 0o400], ofItemAtPath: snapshot.path)
         expect(reader.load() == .standard, "The keyboard needs only read access to the snapshot")
         try! Data("invalid".utf8).write(to: directory.appendingPathComponent("broken.json"))
         let broken = MobileSettingsStore(snapshotURL: directory.appendingPathComponent("broken.json"), defaults: defaults)
         expect(broken.load() == .standard, "Unreadable settings use a safe local default")
-        var languageSettings = MobileKeyboardSettings(suggestionsEnabled: false)
-        languageSettings.selectLanguage(.english)
-        expect(languageSettings.suggestionsEnabled, "English completion has its own default")
-        languageSettings.suggestionsEnabled = false
-        languageSettings.selectLanguage(.chinese)
-        expect(languageSettings.suggestionsEnabled, "Chinese completion is independent")
-        languageSettings.suggestionsEnabled = false
-        languageSettings.selectLanguage(.vietnamese)
-        expect(!languageSettings.suggestionsEnabled && !languageSettings.completionEnabled(for: .english) && !languageSettings.completionEnabled(for: .chinese), "All three completion toggles persist independently")
+        let languageSettings = MobileKeyboardSettings(suggestionsEnabled: false)
+        expect(!languageSettings.suggestionsEnabled && languageSettings.completionEnabled(for: .english), "English completion has its own toggle")
+        let oldSnapshot = Data(#"{"input":"ascii+","inputMode":"quốc ngữ","output":"sieuviet","language":"vi","keyboardLanguage":"chinese","suggestionsEnabled":false,"completionByLanguage":{"english":false}}"#.utf8)
+        let upgraded = try! JSONDecoder().decode(MobileKeyboardSettings.self, from: oldSnapshot)
+        expect(upgraded.profiles.map(\.language) == [.vietnamese, .english, .chinese] && upgraded.keyboardLanguage == .chinese,
+               "0.15 snapshots become a Vietnamese, English and Chinese list on the selected language")
+        expect(!upgraded.suggestionsEnabled && !upgraded.completionEnabled(for: .english) && upgraded.completionEnabled(for: .vietnamese)
+               && upgraded.profiles[0].inputMode == .quocNgu, "All three completion toggles and the input mode migrate")
         let pendingDoc = TestMobileDocument()
         var responses: [([String]) -> Void] = []
         let fast = MobileInputSession(document: pendingDoc, defaults: UserDefaults(suiteName: suite + ".async")!,
@@ -355,9 +358,10 @@ import Foundation
         let chineseDoc = TestMobileDocument()
         let chineseDefaults = UserDefaults(suiteName: suite + ".chinese")!
         defer { chineseDefaults.removePersistentDomain(forName: suite + ".chinese") }
-        var chineseSettings = MobileKeyboardSettings()
-        chineseSettings.selectLanguage(.chinese)
-        chineseSettings.suggestionsEnabled = false
+        var chineseProfile = KeyboardProfile.makeChinese()
+        chineseProfile.suggestionsEnabled = false
+        let chineseSettings = MobileKeyboardSettings(profiles: [chineseProfile, .makeEnglish(), .makeDefault()],
+                                                     activeID: chineseProfile.id, language: "vi")
         let dictionary = ShuangpinDictionary(contents: try! String(contentsOfFile: CommandLine.arguments[1], encoding: .utf8))
         let multilingual = MobileInputSession(document: chineseDoc, defaults: chineseDefaults,
             settingsProvider: { chineseSettings }, chineseDictionary: dictionary)

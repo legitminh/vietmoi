@@ -213,13 +213,17 @@ struct ShuangpinEngine {
         _ = cancel()
         return .commit(text)
     }
+    /// Completions follow the exact conversions, so Space (the first candidate) never picks a prediction.
     mutating func applyCompletions(_ values: [ShuangpinCandidate], for expectedCode: String) {
         guard completionsEnabled, code == expectedCode else { return }
-        candidates = values
-        selectedIndex = min(selectedIndex, max(0, values.count - 1))
+        let exact = Array(candidates.prefix(exactCount))
+        candidates = exact + values.filter { value in !exact.contains { $0.text == value.text } }
+        selectedIndex = min(selectedIndex, max(0, candidates.count - 1))
     }
+    private var exactCount = 0
     private mutating func update() {
         candidates = dictionary.candidates(for: code)
+        exactCount = candidates.count
         selectedIndex = 0
     }
 }

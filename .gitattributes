@@ -1,2 +1,4 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+# Preserve this bundled resource byte-for-byte for Mac build fingerprints.
+Resources/UnitedStatesMode.svg -text

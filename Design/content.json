@@ -1,422 +1,662 @@
 {
   "tagline": {
     "vi": "Tiếng Việt, từng lựa chọn một.",
-    "en": "Vietnamese, one choice at a time."
+    "en": "Vietnamese, one choice at a time.",
+    "zh": "越南语，一次一个选择。"
   },
   "settings": {
     "vi": "Cài đặt",
-    "en": "Settings"
+    "en": "Settings",
+    "zh": "设置"
   },
   "keyboardSettings": {
     "vi": "Cài đặt bàn phím",
-    "en": "Keyboard settings"
+    "en": "Keyboard settings",
+    "zh": "键盘设置"
   },
   "inputLabel": {
-    "vi": "Chế độ nhập",
-    "en": "Input mode"
+    "vi": "Bố cục phím",
+    "en": "Input layout",
+    "zh": "输入布局"
   },
   "outputLabel": {
     "vi": "Cách viết",
-    "en": "Output"
+    "en": "Output",
+    "zh": "输出"
   },
   "language": {
     "vi": "Ngôn ngữ giao diện",
-    "en": "Interface language"
+    "en": "Interface language",
+    "zh": "界面语言"
   },
   "vietnamese": {
     "vi": "Tiếng Việt",
-    "en": "Tiếng Việt"
+    "en": "Tiếng Việt",
+    "zh": "Tiếng Việt"
   },
   "english": {
     "vi": "English",
-    "en": "English"
+    "en": "English",
+    "zh": "English"
   },
   "languageHelp": {
     "vi": "Chọn English nếu bạn đang học tiếng Việt. Lựa chọn này chỉ đổi ngôn ngữ giao diện.",
-    "en": "Choose your interface language. This does not change Vietnamese input or output."
+    "en": "Choose your interface language. This does not change Vietnamese input or output.",
+    "zh": "选择界面语言。这不会改变越南语的输入或输出。"
   },
   "defaultKeyboard": {
     "vi": "Bàn phím mặc định",
-    "en": "Default keyboard"
+    "en": "Default keyboard",
+    "zh": "默认键盘"
   },
   "keyboardNumber": {
     "vi": "Bàn phím {number}",
-    "en": "Keyboard {number}"
+    "en": "Keyboard {number}",
+    "zh": "键盘 {number}"
   },
   "showKeyboard": {
     "vi": "Hiện bàn phím ảo",
-    "en": "Show virtual keyboard"
+    "en": "Show virtual keyboard",
+    "zh": "显示虚拟键盘"
   },
   "suggestions": {
-    "vi": "Gợi ý hoàn tất",
-    "en": "Completion suggestions"
+    "vi": "Gợi ý",
+    "en": "Suggestions",
+    "zh": "建议"
   },
   "suggestionsHelp": {
-    "vi": "Hiện phần còn lại của từ hoặc cụm từ phía trên bàn phím. Dấu cách chọn gợi ý đầu tiên khi đang tạo một từ.",
-    "en": "Show word and phrase suffixes above the keyboard. Space accepts the first suggestion while composing a word."
+    "vi": "Hiện phần còn lại của từ hoặc cụm từ phía trên bàn phím. Tab hoặc chạm để chọn gợi ý; dấu cách chỉ gõ dấu cách.",
+    "en": "Show word and phrase suffixes above the keyboard. Tab or a tap accepts a suggestion; Space only types a space.",
+    "zh": "在键盘上方显示词或短语的剩余部分。按 Tab 或轻点接受建议；空格只输入空格。"
   },
   "hideKeyboardHelp": {
     "vi": "Tắt để ẩn hoàn toàn bảng phím khi gõ.",
-    "en": "Turn off to hide the keyboard guide while typing."
+    "en": "Turn off to hide the keyboard guide while typing.",
+    "zh": "关闭后，输入时隐藏键盘提示。"
   },
   "selected": {
     "vi": "Đang dùng",
-    "en": "Selected"
+    "en": "Selected",
+    "zh": "已选"
   },
   "select": {
     "vi": "Chọn",
-    "en": "Select"
+    "en": "Select",
+    "zh": "选择"
   },
   "selectProfile": {
     "vi": "Chọn {name}",
-    "en": "Select {name}"
+    "en": "Select {name}",
+    "zh": "选择 {name}"
   },
   "removeKeyboard": {
     "vi": "Xóa bàn phím",
-    "en": "Remove keyboard"
+    "en": "Remove keyboard",
+    "zh": "移除键盘"
   },
   "removeProfile": {
     "vi": "Xóa {name}",
-    "en": "Remove {name}"
+    "en": "Remove {name}",
+    "zh": "移除 {name}"
   },
   "keepKeyboard": {
     "vi": "Giữ ít nhất một bàn phím",
-    "en": "Keep at least one keyboard"
+    "en": "Keep at least one keyboard",
+    "zh": "至少保留一个键盘"
   },
   "inputProfile": {
-    "vi": "Chế độ nhập cho {name}",
-    "en": "Input mode for {name}"
+    "vi": "Bố cục phím cho {name}",
+    "en": "Input layout for {name}",
+    "zh": "{name} 的输入布局"
   },
   "outputProfile": {
     "vi": "Cách viết cho {name}",
-    "en": "Output for {name}"
+    "en": "Output for {name}",
+    "zh": "{name} 的输出"
   },
   "showProfile": {
     "vi": "Hiện bàn phím ảo cho {name}",
-    "en": "Show virtual keyboard for {name}"
+    "en": "Show virtual keyboard for {name}",
+    "zh": "为 {name} 显示虚拟键盘"
   },
   "addKeyboard": {
     "vi": "Thêm bàn phím",
-    "en": "Add keyboard"
+    "en": "Add keyboard",
+    "zh": "添加键盘"
   },
   "roundHelp": {
-    "vi": "Chọn ngôn ngữ trước, rồi chọn chế độ nhập và cách viết. Nhấn nhanh Shift trái để đổi bàn phím.",
-    "en": "Choose a language, then an input and output. Tap Left Shift to cycle keyboards."
+    "vi": "Âm đầu → âm đệm + âm chính → âm cuối → thanh, rồi dấu cách. Quốc ngữ chuyển âm tiết hoàn chỉnh sang cách viết chuẩn; phần chưa xong giữ nguyên dạng phiên âm.",
+    "en": "Initial → onglide + core vowel → final → tone, then a space. Quốc ngữ converts completed words to standard Vietnamese; unfinished text stays phonetic.",
+    "zh": "声母 → 介音 + 主元音 → 韵尾 → 声调，然后空格。Quốc ngữ 会把完整的词转换为标准越南语；未完成的部分保持拼音形式。"
   },
   "shiftLimit": {
     "vi": "Thời gian nhấn Shift trái",
-    "en": "Left Shift tap limit"
+    "en": "Left Shift tap limit",
+    "zh": "左 Shift 轻点时限"
   },
   "shiftLimitHelp": {
-    "vi": "Nhấn riêng để đổi chế độ. Giữ hoặc kết hợp phím khác để dùng Shift bình thường.",
-    "en": "Tap alone to switch modes. Hold or use with another key for normal Shift."
+    "vi": "Chạm riêng để chuyển sang bàn phím tiếp theo. Giữ hoặc dùng cùng phím khác để dùng Shift bình thường.",
+    "en": "Tap alone to switch to the next keyboard. Hold or use with another key for normal Shift.",
+    "zh": "单独轻点切换到下一个键盘。按住或与其他键一起使用即为普通 Shift。"
   },
   "shiftLimitError": {
     "vi": "Nhập từ 0,01 đến 5 giây. Giá trị cũ vẫn được giữ.",
-    "en": "Enter 0.01–5 seconds. Your previous value was kept."
+    "en": "Enter 0.01–5 seconds. Your previous value was kept.",
+    "zh": "请输入 0.01–5 秒。已保留之前的值。"
   },
   "seconds": {
     "vi": "giây",
-    "en": "seconds"
+    "en": "seconds",
+    "zh": "秒"
   },
   "reset": {
     "vi": "Đặt lại",
-    "en": "Reset"
+    "en": "Reset",
+    "zh": "重置"
   },
   "resetShift": {
     "vi": "Đặt lại thời gian nhấn Shift",
-    "en": "Reset Shift tap limit"
+    "en": "Reset Shift tap limit",
+    "zh": "重置 Shift 轻点时限"
   },
   "resetShiftHelp": {
     "vi": "Khôi phục thời gian mặc định {seconds} giây",
-    "en": "Restore the default {seconds}-second tap limit"
+    "en": "Restore the default {seconds}-second tap limit",
+    "zh": "恢复默认的 {seconds} 秒轻点时限"
   },
   "hideAndType": {
     "vi": "Ẩn và tiếp tục gõ",
-    "en": "Hide & keep typing"
+    "en": "Hide & keep typing",
+    "zh": "隐藏并继续输入"
   },
   "reopenHelp": {
     "vi": "Mở siêu việt trong Applications để cài đặt.",
-    "en": "Open siêu việt in Applications for settings."
+    "en": "Open siêu việt in Applications for settings.",
+    "zh": "在“应用程序”中打开 siêu việt 进行设置。"
   },
   "hideApp": {
     "vi": "Ẩn siêu việt",
-    "en": "Hide siêu việt"
+    "en": "Hide siêu việt",
+    "zh": "隐藏 siêu việt"
   },
   "quitApp": {
     "vi": "Thoát siêu việt",
-    "en": "Quit siêu việt"
+    "en": "Quit siêu việt",
+    "zh": "退出 siêu việt"
   },
   "tryKeyboard": {
     "vi": "Thử bàn phím",
-    "en": "Try keyboard"
+    "en": "Try keyboard",
+    "zh": "试用键盘"
   },
   "tryApp": {
     "vi": "Thử siêu việt",
-    "en": "Try siêu việt"
+    "en": "Try siêu việt",
+    "zh": "试用 siêu việt"
   },
   "systemKeyboard": {
     "vi": "Bàn phím hệ thống",
-    "en": "System keyboard"
+    "en": "System keyboard",
+    "zh": "系统键盘"
   },
   "enableKeyboard": {
     "vi": "Bật bàn phím",
-    "en": "Enable keyboard"
+    "en": "Enable keyboard",
+    "zh": "启用键盘"
   },
   "selectKeyboard": {
     "vi": "Chọn bàn phím",
-    "en": "Select keyboard"
+    "en": "Select keyboard",
+    "zh": "选择键盘"
   },
   "clear": {
     "vi": "Xóa",
-    "en": "Clear"
+    "en": "Clear",
+    "zh": "清除"
   },
   "useOtherApps": {
     "vi": "Dùng siêu việt trong ứng dụng khác",
-    "en": "Use siêu việt in other apps"
+    "en": "Use siêu việt in other apps",
+    "zh": "在其他应用中使用 siêu việt"
   },
   "iosEnableHelp": {
-    "vi": "1. Mở Cài đặt → Cài đặt chung → Bàn phím → Bàn phím.\n2. Chọn Thêm bàn phím mới và chọn siêu việt.\n3. Trong ô nhập, giữ phím địa cầu và chọn siêu việt.\n\nChọn chế độ nhập và cách viết trong Cài đặt của ứng dụng. Không cần Quyền truy cập đầy đủ.",
-    "en": "1. Open Settings → General → Keyboard → Keyboards.\n2. Tap Add New Keyboard and choose siêu việt.\n3. In a text field, hold the globe key and choose siêu việt.\n\nChoose input and output in the app’s Settings. Full Access is not required."
+    "vi": "1. Mở Cài đặt → Cài đặt chung → Bàn phím → Bàn phím.\n2. Chọn Thêm bàn phím mới và chọn siêu việt.\n3. Trong ô nhập, giữ phím địa cầu và chọn siêu việt.\n\nChọn bố cục và cách viết trong Cài đặt của ứng dụng. Không cần Quyền truy cập đầy đủ.",
+    "en": "1. Open Settings → General → Keyboard → Keyboards.\n2. Tap Add New Keyboard and choose siêu việt.\n3. In a text field, hold the globe key and choose siêu việt.\n\nChoose input and output in the app’s Settings. Full Access is not required.",
+    "zh": "1. 打开“设置”→“通用”→“键盘”→“键盘”。\n2. 轻点“添加新键盘”，选择 siêu việt。\n3. 在文本框中按住地球键，选择 siêu việt。\n\n在应用的设置中选择输入和输出。无需“完全访问”。"
   },
   "openSettings": {
     "vi": "Mở Cài đặt",
-    "en": "Open Settings"
+    "en": "Open Settings",
+    "zh": "打开设置"
   },
   "done": {
     "vi": "Xong",
-    "en": "Done"
+    "en": "Done",
+    "zh": "完成"
   },
   "ok": {
     "vi": "OK",
-    "en": "OK"
+    "en": "OK",
+    "zh": "好"
   },
   "tryTyping": {
     "vi": "Gõ thử tại đây",
-    "en": "Try typing here"
+    "en": "Try typing here",
+    "zh": "在这里试着输入"
   },
   "secondField": {
     "vi": "Ô thứ hai để thử chuyển đổi",
-    "en": "A second field for switching"
+    "en": "A second field for switching",
+    "zh": "用于切换的第二个输入框"
   },
   "practiceHelp": {
     "vi": "Âm đầu → âm chính → âm cuối → thanh\nĐể gõ má, chọn m → a → ∅ → sắc. Để gõ phở, chọn f → ơ → ∅ → hỏi với cách viết quốc ngữ.",
-    "en": "Initial → vowel → final → tone\nFor má, choose m → a → ∅ → sắc. For phở, choose f → ơ → ∅ → hỏi with quốc ngữ output."
+    "en": "Initial → vowel → final → tone\nFor má, choose m → a → ∅ → sắc. For phở, choose f → ơ → ∅ → hỏi with quốc ngữ output.",
+    "zh": "声母 → 元音 → 韵尾 → 声调\n输入 má：选择 m → a → ∅ → sắc。输入 phở（quốc ngữ 输出）：选择 f → ơ → ∅ → hỏi。"
   },
   "androidEnableHelp": {
     "vi": "Bật siêu việt trong cài đặt Android, rồi chọn làm bàn phím. Bàn phím hoạt động ngoại tuyến.",
-    "en": "Enable siêu việt in Android settings, then select it as your keyboard. It works offline."
+    "en": "Enable siêu việt in Android settings, then select it as your keyboard. It works offline.",
+    "zh": "在 Android 设置中启用 siêu việt，然后将其选为键盘。可离线使用。"
   },
   "iosSettingsHelp": {
     "vi": "Bàn phím đọc lựa chọn đã lưu khi mở. Không cần Quyền truy cập đầy đủ.",
-    "en": "The keyboard loads your saved choices when it opens. Full Access is not required."
+    "en": "The keyboard loads your saved choices when it opens. Full Access is not required.",
+    "zh": "键盘打开时会读取你保存的选择。无需“完全访问”。"
   },
   "settingsHelp": {
     "vi": "Thay đổi có hiệu lực khi bạn quay lại ô nhập.\n\nBàn phím không lưu nội dung bạn gõ và không kết nối máy chủ.",
-    "en": "Changes apply when you return to a text field.\n\nThe keyboard never stores your typing or connects to a server."
+    "en": "Changes apply when you return to a text field.\n\nThe keyboard never stores your typing or connects to a server.",
+    "zh": "返回文本框后更改生效。\n\n键盘从不保存你的输入，也不连接服务器。"
   },
   "saveError": {
     "vi": "Không thể lưu cài đặt",
-    "en": "Couldn’t save settings"
+    "en": "Couldn’t save settings",
+    "zh": "无法保存设置"
   },
   "saveErrorHelp": {
     "vi": "Vui lòng thử lại. Lựa chọn trước vẫn được giữ.",
-    "en": "Please try again. Your previous keyboard settings are still selected."
+    "en": "Please try again. Your previous keyboard settings are still selected.",
+    "zh": "请重试。之前的键盘设置仍然有效。"
   },
   "space": {
     "vi": "dấu cách",
-    "en": "space"
+    "en": "space",
+    "zh": "空格"
   },
   "return": {
     "vi": "xuống dòng",
-    "en": "return"
+    "en": "return",
+    "zh": "换行"
   },
   "backspace": {
     "vi": "Xóa lùi",
-    "en": "Backspace"
+    "en": "Backspace",
+    "zh": "退格"
   },
   "nextKeyboard": {
-    "vi": "Nhấn nhanh Shift trái để đổi bàn phím",
-    "en": "Tap Left Shift for the next keyboard"
+    "vi": "Bàn phím tiếp theo",
+    "en": "Next keyboard",
+    "zh": "下一个键盘"
   },
   "numbersSymbols": {
     "vi": "Số và ký hiệu",
-    "en": "Numbers and symbols"
+    "en": "Numbers and symbols",
+    "zh": "数字和符号"
   },
   "moreSymbols": {
     "vi": "Ký hiệu khác",
-    "en": "More symbols"
+    "en": "More symbols",
+    "zh": "更多符号"
   },
   "shift": {
     "vi": "Shift",
-    "en": "Shift"
+    "en": "Shift",
+    "zh": "Shift"
   },
   "capsLock": {
     "vi": "Khóa chữ hoa",
-    "en": "Caps Lock"
+    "en": "Caps Lock",
+    "zh": "大写锁定"
   },
   "uppercaseNext": {
     "vi": "Chữ hoa",
-    "en": "Uppercase"
+    "en": "Uppercase",
+    "zh": "大写"
   },
   "lowercase": {
     "vi": "Chữ thường",
-    "en": "Lowercase"
+    "en": "Lowercase",
+    "zh": "小写"
   },
   "uppercaseAscii": {
     "vi": "Chữ ASCII hoa",
-    "en": "Uppercase ASCII"
+    "en": "Uppercase ASCII",
+    "zh": "大写 ASCII"
   },
   "comma": {
     "vi": "Dấu phẩy",
-    "en": "Comma"
+    "en": "Comma",
+    "zh": "逗号"
   },
   "period": {
     "vi": "Dấu chấm",
-    "en": "Period"
+    "en": "Period",
+    "zh": "句号"
   },
   "symbol": {
     "vi": "Ký hiệu {symbol}",
-    "en": "Symbol {symbol}"
+    "en": "Symbol {symbol}",
+    "zh": "符号 {symbol}"
   },
   "switchVietnamese": {
     "vi": "Chuyển sang tiếng Việt",
-    "en": "Switch to Vietnamese"
+    "en": "Switch to Vietnamese",
+    "zh": "切换到越南语"
   },
   "switchAscii": {
     "vi": "Chuyển sang ASCII",
-    "en": "Switch to ASCII"
+    "en": "Switch to ASCII",
+    "zh": "切换到 ASCII"
   },
   "unavailable": {
     "vi": "không khả dụng",
-    "en": "unavailable"
+    "en": "unavailable",
+    "zh": "不可用"
   },
   "save": {
     "vi": "Lưu",
-    "en": "Save"
+    "en": "Save",
+    "zh": "保存"
   },
   "saved": {
     "vi": "Đã lưu. Quay lại ô nhập để áp dụng.",
-    "en": "Saved. Return to a text field to apply."
+    "en": "Saved. Return to a text field to apply.",
+    "zh": "已保存。返回文本框后生效。"
   },
   "windowsPracticeHelp": {
     "vi": "Chọn siêu việt bằng Win+Space, rồi gõ thử tại đây:",
-    "en": "Select siêu việt with Win+Space, then type here:"
+    "en": "Select siêu việt with Win+Space, then type here:",
+    "zh": "按 Win+Space 选择 siêu việt，然后在这里输入："
   },
   "unmappedKeyHelp": {
     "vi": "Chọn phím được tô sáng, hoặc nhấn riêng Shift để gõ ASCII.",
-    "en": "Choose a highlighted key, or tap Shift for ASCII."
+    "en": "Choose a highlighted key, or tap Shift for ASCII.",
+    "zh": "选择高亮的键，或轻点 Shift 切换到 ASCII。"
   },
   "installBuildFirst": {
     "vi": "Hãy tạo bản dựng ứng dụng trước.",
-    "en": "Build the app first."
+    "en": "Build the app first.",
+    "zh": "请先构建应用。"
   },
   "installStale": {
     "vi": "Bản dựng macOS đã cũ. Chạy bash scripts/build.sh trước khi cài.",
-    "en": "The Mac build is stale. Run bash scripts/build.sh before installing."
+    "en": "The Mac build is stale. Run bash scripts/build.sh before installing.",
+    "zh": "Mac 构建已过期。安装前请运行 bash scripts/build.sh。"
   },
   "installPreserved": {
     "vi": "Giữ nguyên {path} đã có; hãy mở trực tiếp {destination}.",
-    "en": "Preserved existing {path}; open {destination} directly."
+    "en": "Preserved existing {path}; open {destination} directly.",
+    "zh": "已保留现有的 {path}；请直接打开 {destination}。"
   },
   "installComplete": {
     "vi": "Đã cài: {path}",
-    "en": "Installed: {path}"
+    "en": "Installed: {path}",
+    "zh": "已安装：{path}"
   },
   "installLaunch": {
     "vi": "Mở ứng dụng: {path}",
-    "en": "Launch: {path}"
+    "en": "Launch: {path}",
+    "zh": "启动：{path}"
   },
   "installMacHelp": {
-    "vi": "Chọn siêu việt trong Cài đặt hệ thống → Bàn phím → Nhập văn bản.",
-    "en": "Select siêu việt in System Settings → Keyboard → Text Input."
+    "vi": "Thêm siêu việt trong Cài đặt hệ thống → Bàn phím → Nhập văn bản → Sửa → +. Tìm siêu việt hoặc tiếng Việt.",
+    "en": "Add siêu việt in System Settings → Keyboard → Text Input → Edit → +. Search for siêu việt or Vietnamese.",
+    "zh": "在“系统设置”→“键盘”→“文字输入”→“编辑”→“+”中添加 siêu việt。搜索 siêu việt 或 Vietnamese。"
   },
   "installMacLogin": {
     "vi": "Nếu chưa thấy bàn phím, hãy đăng xuất rồi đăng nhập lại để macOS làm mới danh sách bộ gõ.",
-    "en": "If the keyboard is not listed, log out and back in so macOS refreshes its input-method list."
+    "en": "If the keyboard is not listed, log out and back in so macOS refreshes its input-method list.",
+    "zh": "如果列表中没有该键盘，请注销后重新登录，让 macOS 刷新输入法列表。"
   },
   "installMacVerified": {
     "vi": "Đã xác minh siêu việt đang chạy, PID {pid}, mã bản dựng {fingerprint}.",
-    "en": "Verified running siêu việt, PID {pid}, build fingerprint {fingerprint}."
+    "en": "Verified running siêu việt, PID {pid}, build fingerprint {fingerprint}.",
+    "zh": "已确认 siêu việt 正在运行，PID {pid}，构建指纹 {fingerprint}。"
   },
   "installMacNotRunning": {
     "vi": "Đã xác minh gói ứng dụng đã cài, nhưng chưa khởi chạy được tiến trình macOS mới.",
-    "en": "The installed bundle is verified, but the updated Mac process did not start."
+    "en": "The installed bundle is verified, but the updated Mac process did not start.",
+    "zh": "已安装的应用包验证通过，但更新后的 Mac 进程没有启动。"
   },
   "installIOSTeam": {
     "vi": "Cung cấp mã nhóm phát triển Apple để ký bản dựng cho thiết bị.",
-    "en": "Supply your Apple development team ID to sign the device build."
+    "en": "Supply your Apple development team ID to sign the device build.",
+    "zh": "请提供你的 Apple 开发团队 ID 以签名设备构建。"
   },
   "installIOSUnsigned": {
     "vi": "Cần bản dựng thiết bị đã ký; không thể cài bản dành cho trình mô phỏng hoặc bản chưa ký.",
-    "en": "A signed device build is required; simulator and unsigned builds cannot be installed."
+    "en": "A signed device build is required; simulator and unsigned builds cannot be installed.",
+    "zh": "需要已签名的设备构建；模拟器构建和未签名构建无法安装。"
   },
   "installIOSUsage": {
     "vi": "Cách dùng: bash scripts/install-ios.sh device-id [development-team-id | --no-build]. Đặt SIEUVIET_LANGUAGE=en để dùng tiếng Anh.",
-    "en": "Usage: bash scripts/install-ios.sh device-id [development-team-id | --no-build]. Set SIEUVIET_LANGUAGE=en for English."
+    "en": "Usage: bash scripts/install-ios.sh device-id [development-team-id | --no-build]. Set SIEUVIET_LANGUAGE=en for English.",
+    "zh": "用法：bash scripts/install-ios.sh 设备ID [开发团队ID | --no-build]。设置 SIEUVIET_LANGUAGE=en 以使用英文。"
   },
   "installWindowsMissingAdapter": {
     "vi": "Không tìm thấy SieuvietTSF.dll trong gói cài đặt.",
-    "en": "SieuvietTSF.dll is missing from the installation package."
+    "en": "SieuvietTSF.dll is missing from the installation package.",
+    "zh": "安装包中缺少 SieuvietTSF.dll。"
   },
   "installWindowsMissingEngine": {
     "vi": "Cần có SieuvietEngine.dll trước khi đăng ký bộ gõ.",
-    "en": "SieuvietEngine.dll is required before registration."
+    "en": "SieuvietEngine.dll is required before registration.",
+    "zh": "注册前需要 SieuvietEngine.dll。"
   },
   "installWindowsMissingSmoke": {
     "vi": "Không tìm thấy desktop-session-tests.exe để kiểm tra bộ gõ.",
-    "en": "desktop-session-tests.exe is missing; the engine cannot be checked."
+    "en": "desktop-session-tests.exe is missing; the engine cannot be checked.",
+    "zh": "缺少 desktop-session-tests.exe，无法检查引擎。"
   },
   "installWindowsSmokeFailed": {
     "vi": "Kiểm tra bộ gõ không đạt; đã bỏ qua bước đăng ký.",
-    "en": "The shared-engine smoke test failed; registration was skipped."
+    "en": "The shared-engine smoke test failed; registration was skipped.",
+    "zh": "共享引擎冒烟测试失败，已跳过注册。"
   },
   "installWindowsRegistrationFailed": {
     "vi": "Đăng ký TSF không thành công. Kiểm tra quyền quản trị và kiến trúc của PowerShell cùng gói cài đặt.",
-    "en": "TSF registration failed. Check administrator access and matching PowerShell/package architectures."
+    "en": "TSF registration failed. Check administrator access and matching PowerShell/package architectures.",
+    "zh": "TSF 注册失败。请检查管理员权限，以及 PowerShell 与安装包的架构是否一致。"
   },
   "installWindowsRegistered": {
     "vi": "Đã đăng ký. Chọn siêu việt bằng Win+Space. Mở SieuvietSettings.exe để cài đặt và gõ thử. Dùng -Language en để xem hướng dẫn cài bằng tiếng Anh.",
-    "en": "Registered. Select siêu việt with Win+Space. Open SieuvietSettings.exe for settings and practice. Use -Language vi for Vietnamese installation messages."
+    "en": "Registered. Select siêu việt with Win+Space. Open SieuvietSettings.exe for settings and practice. Use -Language vi for Vietnamese installation messages.",
+    "zh": "已注册。按 Win+Space 选择 siêu việt。打开 SieuvietSettings.exe 进行设置和练习。使用 -Language vi 显示越南语安装信息。"
   },
   "installWindowsRemoved": {
     "vi": "Đã gỡ đăng ký siêu việt. Cài đặt cá nhân vẫn được giữ.",
-    "en": "siêu việt registration was removed. Personal settings were preserved."
+    "en": "siêu việt registration was removed. Personal settings were preserved.",
+    "zh": "已移除 siêu việt 注册。个人设置已保留。"
   },
   "keyboardLanguage": {
-    "vi": "Ngôn ngữ bàn phím",
-    "en": "Keyboard language"
+    "vi": "Ngôn ngữ",
+    "en": "Language",
+    "zh": "语言"
+  },
+  "languageProfile": {
+    "vi": "Ngôn ngữ của {name}",
+    "en": "Language for {name}",
+    "zh": "{name} 的语言"
+  },
+  "englishKeyboard": {
+    "vi": "English",
+    "en": "English",
+    "zh": "English"
+  },
+  "literalOutput": {
+    "vi": "nguyên dạng",
+    "en": "literal",
+    "zh": "原样"
+  },
+  "keyboardsHeading": {
+    "vi": "Bàn phím",
+    "en": "Keyboards",
+    "zh": "键盘"
+  },
+  "keyboardsHelp": {
+    "vi": "Chạm Shift trái để chuyển sang bàn phím tiếp theo trong danh sách.",
+    "en": "Tap left Shift to move to the next keyboard in this list.",
+    "zh": "轻点左 Shift 切换到列表中的下一个键盘。"
+  },
+  "pageIntro": {
+    "vi": "giới thiệu",
+    "en": "intro",
+    "zh": "介绍"
+  },
+  "pageKeyboards": {
+    "vi": "bàn phím",
+    "en": "keyboards",
+    "zh": "键盘"
+  },
+  "pageTry": {
+    "vi": "thử",
+    "en": "try",
+    "zh": "试用"
+  },
+  "typingWith": {
+    "vi": "Đang gõ: {name}",
+    "en": "Typing with {name}",
+    "zh": "正在使用 {name} 输入"
+  },
+  "tryHelp": {
+    "vi": "Gõ bằng bàn phím thật hoặc bàn phím ảo. Chạm Shift để chuyển bàn phím. Esc để thoát.",
+    "en": "Type with your keyboard or the on-screen one. Tap Shift to switch keyboards. Esc exits.",
+    "zh": "用你的键盘或屏幕键盘输入。轻点 Shift 切换键盘。按 Esc 退出。"
+  },
+  "startTyping": {
+    "vi": "Bắt đầu gõ",
+    "en": "Start typing",
+    "zh": "开始输入"
+  },
+  "suggestionsOn": {
+    "vi": "Gợi ý: bật",
+    "en": "Suggestions: on",
+    "zh": "建议：开"
+  },
+  "suggestionsOff": {
+    "vi": "Gợi ý: tắt",
+    "en": "Suggestions: off",
+    "zh": "建议：关"
+  },
+  "acceptSuggestionHelp": {
+    "vi": "Tab hoặc chạm để chọn gợi ý. Dấu cách không chọn gợi ý.",
+    "en": "Tab or tap to accept a suggestion. Space never accepts one.",
+    "zh": "按 Tab 或轻点以接受建议。空格不会接受建议。"
   },
   "keyboardLanguage.english": {
     "vi": "Tiếng Anh",
-    "en": "English"
+    "en": "English",
+    "zh": "英语"
   },
   "keyboardLanguage.vietnamese": {
     "vi": "Tiếng Việt",
-    "en": "Vietnamese"
+    "en": "Vietnamese",
+    "zh": "越南语"
   },
   "keyboardLanguage.chinese": {
     "vi": "Tiếng Trung",
-    "en": "Chinese"
+    "en": "Chinese",
+    "zh": "中文"
   },
   "simplifiedChinese": {
     "vi": "Tiếng Trung giản thể",
-    "en": "Simplified Chinese"
+    "en": "Simplified Chinese",
+    "zh": "简体中文"
   },
   "suggestionsHelp.english": {
-    "vi": "Gợi ý hoàn tất từ tiếng Anh. Tab nhận gợi ý đầu tiên.",
-    "en": "Suggest English word completions. Tab accepts the first suggestion."
+    "vi": "Gợi ý hoàn tất từ tiếng Anh. Tab hoặc chạm để chọn gợi ý.",
+    "en": "Suggest English word completions. Tab or a tap accepts a suggestion.",
+    "zh": "建议英语单词补全。按 Tab 或轻点接受建议。"
   },
   "suggestionsHelp.chinese": {
     "vi": "Gợi ý hoàn tất từ và cụm từ từ các phím đã nhập. Tắt vẫn giữ danh sách chữ Hán để chuyển đổi.",
-    "en": "Complete Chinese words and phrases from partial input. Conversion candidates remain available when off."
+    "en": "Complete Chinese words and phrases from partial input. Conversion candidates remain available when off.",
+    "zh": "根据已输入的按键补全词和短语。关闭后仍保留汉字转换候选。"
   },
   "suggestionsHelp.vietnamese": {
-    "vi": "Hiện phần còn lại của từ hoặc cụm từ phía trên bàn phím. Dấu cách chọn gợi ý đầu tiên khi đang tạo một từ.",
-    "en": "Show word and phrase suffixes above the keyboard. Space accepts the first suggestion while composing a word."
+    "vi": "Hiện phần còn lại của từ hoặc cụm từ phía trên bàn phím. Tab hoặc chạm để chọn gợi ý; dấu cách chỉ gõ dấu cách.",
+    "en": "Show word and phrase suffixes above the keyboard. Tab or a tap accepts a suggestion; Space only types a space.",
+    "zh": "在键盘上方显示词或短语的剩余部分。按 Tab 或轻点接受建议；空格只输入空格。"
   },
   "shiftTapHelp": {
     "vi": "Nhấn nhanh một mình để đổi bàn phím. Giữ hoặc kết hợp phím khác để dùng Shift bình thường.",
-    "en": "Tap alone for the next keyboard. Hold or combine with another key for normal Shift."
+    "en": "Tap alone for the next keyboard. Hold or combine with another key for normal Shift.",
+    "zh": "单独轻按可切换到下一个键盘。按住或与其他键组合则为普通 Shift。"
+  },
+  "theme": {
+    "vi": "Màu giao diện",
+    "en": "Color theme",
+    "zh": "颜色主题"
+  },
+  "themeLight": {
+    "vi": "Sáng",
+    "en": "Light",
+    "zh": "浅色"
+  },
+  "themeDark": {
+    "vi": "Tối",
+    "en": "Dark",
+    "zh": "深色"
+  },
+  "themeSystem": {
+    "vi": "Theo hệ thống",
+    "en": "System",
+    "zh": "跟随系统"
+  },
+  "keypaths": {
+    "vi": "Phím tắt trên nút",
+    "en": "Keypath display",
+    "zh": "按键路径显示"
+  },
+  "keypathsShown": {
+    "vi": "Hiện",
+    "en": "Shown",
+    "zh": "显示"
+  },
+  "keypathsHidden": {
+    "vi": "Ẩn",
+    "en": "Hidden",
+    "zh": "隐藏"
+  },
+  "keypathsHelp": {
+    "vi": "Phím tắt vẫn hoạt động khi ẩn.",
+    "en": "Shortcuts keep working while hidden.",
+    "zh": "隐藏时快捷键仍然有效。"
+  },
+  "boxSize": {
+    "vi": "Cỡ ô",
+    "en": "Box size",
+    "zh": "方块大小"
+  },
+  "boxSizeHelp": {
+    "vi": "Phóng to hoặc thu nhỏ mọi nút và khoảng cách. Mặc định {size} px.",
+    "en": "Scales every button and spacing. Default {size} px.",
+    "zh": "缩放所有按钮和间距。默认 {size} px。"
+  },
+  "pageSettings": {
+    "vi": "cài đặt",
+    "en": "settings",
+    "zh": "设置"
+  },
+  "chinese": {
+    "vi": "中文",
+    "en": "中文",
+    "zh": "中文"
+  },
+  "back": {
+    "vi": "Quay lại",
+    "en": "Back",
+    "zh": "返回"
   }
 }

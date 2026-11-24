@@ -2,6 +2,9 @@ import AppKit
 import InputMethodKit
 import os
 
+// InputMethodKit may create a controller for each text client. The selected
+// keyboard is shared app state (KeyboardProfiles), not document state.
+
 @objc(VietMoiInputController)
 final class VietMoiInputController: IMKInputController {
     private let session = InputSession()
@@ -185,7 +188,9 @@ final class InputSession {
             return false
         }
         if currentProfile?.language == .chinese { return handleChinese(event, client: client) }
-        if currentProfile?.language == .english && event.keyCode == 48 && !suggestions(client).isEmpty {
+        // Tab (or a number key on ASCII+) accepts a suggestion; Space only types a space.
+        if event.keyCode == 48, currentProfile?.language != .chinese, event.modifierFlags.intersection([.shift, .command, .control, .option]).isEmpty,
+           !suggestions(client).isEmpty {
             return acceptSuggestion(0, client: client)
         }
         if currentProfile?.suggestionsEnabled == true, currentProfile?.language == .vietnamese, currentProfile?.inputType == .asciiPlus, !engine.ascii,
@@ -342,10 +347,6 @@ final class InputSession {
 
     private func finishWithSpace(_ sender: Any!) -> Bool {
         guard engine.isPending else { return false }
-        if !engine.preview.isEmpty, let client = sender as? IMKTextInput,
-           currentProfile?.suggestionsEnabled == true, !suggestions(client).isEmpty {
-            return acceptSuggestion(0, client: client)
-        }
         let hasText = !engine.preview.isEmpty
         apply(engine.finishPartial(suffix: " "), sender: sender)
         refresh(sender)
@@ -460,7 +461,7 @@ final class InputSession {
         if currentProfile?.language == .chinese {
             return chineseCommand(command, client: client)
         }
-        if command == .tab, currentProfile?.language == .english, !suggestions(client).isEmpty {
+        if command == .tab, currentProfile?.language != .chinese, !suggestions(client).isEmpty {
             return acceptSuggestion(0, client: client)
         }
         switch command {

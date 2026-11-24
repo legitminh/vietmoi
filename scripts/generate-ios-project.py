@@ -36,6 +36,9 @@ def configs(name, extra):
     return obj(name+'.configs','XCConfigurationList',f'buildConfigurations = {arr(refs)}; defaultConfigurationIsVisible = 0; defaultConfigurationName = Release;')
 core = [file('core.'+p.name,p.name,'sourcecode.swift') for p in sorted((root/'Sources/Core').glob('*.swift')) if p.name != 'KeyboardPreferences.swift']
 presentation = [file('presentation.'+p.name,p.name,'sourcecode.swift') for p in sorted((root/'Sources/Presentation').glob('*.swift'))]
+shell = [file('shell.'+p.name,p.name,'sourcecode.swift') for p in sorted((root/'Sources/AppShell').glob('*.swift'))]
+# The shared UI (scripts/build-web.py) is copied as a folder, keeping its relative paths.
+webapp = file('webapp','../Resources/WebApp','folder')
 mobile = [file('mobile.'+p.name,p.name,'sourcecode.swift') for p in sorted((root/'Sources/Mobile').glob('*.swift'))]
 app = [file('app.'+p.name,p.name,'sourcecode.swift') for p in sorted((ios/'App').glob('*.swift'))]
 ext = [file('extension.'+p.name,p.name,'sourcecode.swift') for p in sorted((ios/'KeyboardExtension').glob('*.swift'))]
@@ -65,13 +68,13 @@ settings = {
 'VietMobileUITests': {'PRODUCT_BUNDLE_IDENTIFIER':'com.minh.sieuviet.ios.uitests','PRODUCT_NAME':'$(TARGET_NAME)','GENERATE_INFOPLIST_FILE':'YES','IPHONEOS_DEPLOYMENT_TARGET':'17.0','TEST_TARGET_NAME':'VietMobile'}
 }
 target_ids=[]
-for name, sources, resources, product_type in [('VietMobile',core+presentation+mobile+app,[privacy,assets,chinese],'application'),('VietKeyboard',core+presentation+mobile+ext,[privacy,chinese],'app-extension'),('VietMobileUITests',tests,[],'bundle.ui-testing')]:
+for name, sources, resources, product_type in [('VietMobile',core+presentation+shell+mobile+app,[privacy,assets,webapp,chinese],'application'),('VietKeyboard',core+presentation+mobile+ext,[privacy,chinese],'app-extension'),('VietMobileUITests',tests,[],'bundle.ui-testing')]:
     phases=[phase(name+'.sources','PBXSourcesBuildPhase',sources),phase(name+'.frameworks','PBXFrameworksBuildPhase',[]),phase(name+'.resources','PBXResourcesBuildPhase',resources)]
     deps=[]
     if name=='VietMobile': phases.append(embed); deps.append(dependency(name,'VietKeyboard'))
     if name=='VietMobileUITests': deps.append(dependency(name,'VietMobile'))
     target_ids.append(obj('target.'+name,'PBXNativeTarget',f'buildConfigurationList = {configs(name,settings[name])}; buildPhases = {arr(phases)}; buildRules = (); dependencies = {arr(deps)}; name = {name}; productName = {name}; productReference = {products[name]}; productType = "com.apple.product-type.{product_type}";'))
-main=group('Root',[group('Core',core,'../Sources/Core'),group('Presentation',presentation,'../Sources/Presentation'),group('Mobile',mobile,'../Sources/Mobile'),group('App',app+[app_info,app_entitlements],'App'),group('KeyboardExtension',ext+[ext_info,ext_entitlements],'KeyboardExtension'),group('UITests',tests,'UITests'),privacy,assets,chinese,group('Products',list(products.values()))])
+main=group('Root',[group('Core',core,'../Sources/Core'),group('Presentation',presentation,'../Sources/Presentation'),group('AppShell',shell,'../Sources/AppShell'),group('Mobile',mobile,'../Sources/Mobile'),group('App',app+[app_info,app_entitlements],'App'),group('KeyboardExtension',ext+[ext_info,ext_entitlements],'KeyboardExtension'),group('UITests',tests,'UITests'),privacy,assets,webapp,chinese,group('Products',list(products.values()))])
 capabilities = ' '.join(f'{ident("target."+name)} = {{ ProvisioningStyle = Automatic; SystemCapabilities = {{ com.apple.ApplicationGroups.iOS = {{ enabled = 1; }}; }}; }};' for name in ['VietMobile','VietKeyboard'])
 obj('project','PBXProject',f'attributes = {{ BuildIndependentTargetsInParallel = YES; LastUpgradeCheck = 1600; TargetAttributes = {{ {capabilities} }}; }}; buildConfigurationList = {configs("Project",{})}; compatibilityVersion = "Xcode 14.0"; developmentRegion = vi; hasScannedForEncodings = 0; knownRegions = (en, Base, vi,); mainGroup = {main}; productRefGroup = {ident("group.Products")}; projectDirPath = ""; projectRoot = ""; targets = {arr(target_ids)};')
 (project/'project.pbxproj').write_text('// !$*UTF8*$!\n{ archiveVersion = 1; classes = {}; objectVersion = 56; objects = {\n'+ '\n'.join(f'{k} = {v};' for k,v in objects.items()) + f'\n}}; rootObject = {project_id}; }}\n')

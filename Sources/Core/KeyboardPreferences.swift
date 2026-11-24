@@ -10,8 +10,8 @@ final class KeyboardPreferences {
 
     init(defaults: UserDefaults = .standard) { self.defaults = defaults }
     var language: String {
-        get { defaults.string(forKey: "interfaceLanguage") == "en" ? "en" : "vi" }
-        set { defaults.set(newValue == "en" ? "en" : "vi", forKey: "interfaceLanguage") }
+        get { AppCopy.supportedLanguage(defaults.string(forKey: "interfaceLanguage")) }
+        set { defaults.set(AppCopy.supportedLanguage(newValue), forKey: "interfaceLanguage") }
     }
     var shiftTapSeconds: Double {
         guard let number = defaults.object(forKey: shiftTapKey) as? NSNumber else {

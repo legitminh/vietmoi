@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component>
+  <name>org.freedesktop.IBus.Sieuviet</name><description>@SIEUVIET_NAME@</description>
+  <exec>@CMAKE_INSTALL_FULL_LIBEXECDIR@/sieuviet/ibus-engine-sieuviet --ibus</exec>
+  <version>@SIEUVIET_VERSION@</version><author>Sieuviet</author><license>See project distribution</license>
+  <engines><engine><name>sieuviet</name><longname>@SIEUVIET_NAME@</longname><language>vi</language>
+    <layout>us</layout><description>@SIEUVIET_NAME@</description><icon>@CMAKE_INSTALL_FULL_DATADIR@/icons/hicolor/scalable/apps/sieuviet.svg</icon>
+    <rank>80</rank><symbol>SV</symbol></engine></engines>
+</component>

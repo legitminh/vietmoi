@@ -1,43 +1,26 @@
 import Foundation
 
-enum KeyboardLanguage: String, Codable, CaseIterable {
-    case english, vietnamese, chinese
-    var displayName: String { AppCopy.text("keyboardLanguage." + rawValue) }
-    var inputTypes: [InputType] {
-        switch self {
-        case .english: return [.english]
-        case .vietnamese: return [.asciiPlus, .grid4x8, .telex]
-        case .chinese: return [.microsoftShuangpin]
-        }
-    }
-    var outputs: [OutputType] {
-        switch self {
-        case .english: return [.english]
-        case .vietnamese: return [.sieuviet, .quocNgu]
-        case .chinese: return [.simplifiedChinese]
-        }
-    }
-}
-
-enum InputMode: String, Codable, CaseIterable {
-    case sieuviet, quocNgu = "quốc ngữ"
-    var displayName: String { self == .sieuviet ? AppDesign.name : rawValue }
-    var inventory: VietnamesePhoneticInventory { self == .sieuviet ? .sieuviet : .quocNgu }
-    var keymap: ASCIIPlusKeymap { self == .sieuviet ? .sieuviet : .quocNgu }
-}
-
+// Portable profile values and schema migration. Persistence belongs to the host.
 enum InputType: String, Codable, CaseIterable {
-    case grid4x8, asciiPlus = "ascii+", telex, english, microsoftShuangpin = "Microsoft Shuangpin"
+    case grid4x8, asciiPlus = "ascii+", telex, qwerty, microsoftShuangpin = "Microsoft Shuangpin"
+    /// The language this layout belongs to (telex is a Vietnamese layout).
     var language: KeyboardLanguage {
-        self == .english ? .english : self == .microsoftShuangpin ? .chinese : .vietnamese
+        self == .qwerty ? .english : self == .microsoftShuangpin ? .chinese : .vietnamese
+    }
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let value = try container.decode(String.self)
+        if value == "english" { self = .qwerty }  // 0.15 Apple builds
+        else if let type = Self(rawValue: value) { self = type }
+        else { throw DecodingError.dataCorruptedError(in: container, debugDescription: "Unknown input type") }
     }
 }
 enum OutputType: String, Codable, CaseIterable {
-    case quocNgu = "quốc ngữ", sieuviet, english, simplifiedChinese = "Simplified Chinese"
+    case quocNgu = "quốc ngữ", sieuviet, literal, simplifiedChinese = "Simplified Chinese"
     var displayName: String {
         switch self {
         case .sieuviet: return AppDesign.name
-        case .english: return "English"
+        case .literal: return AppCopy.text("literalOutput")
         case .simplifiedChinese: return AppCopy.text("simplifiedChinese")
         case .quocNgu: return rawValue
         }
@@ -47,33 +30,79 @@ enum OutputType: String, Codable, CaseIterable {
         let value = try container.decode(String.self)
         if value == "vietmoi" { self = .sieuviet }
         else if value == "vietstandard" { self = .quocNgu }
+        else if value == "english" { self = .literal }  // 0.15 Apple builds
         else if let type = Self(rawValue: value) { self = type }
         else { throw DecodingError.dataCorruptedError(in: container, debugDescription: "Unknown output type") }
     }
 }
 
+// Each keyboard types one language. A language allows its own input layouts and
+// outputs; the first of each is the default. A left Shift tap moves to the next keyboard.
+enum KeyboardLanguage: String, Codable, CaseIterable {
+    case vietnamese = "vi", english = "en", chinese = "zh"
+    var inputs: [InputType] {
+        switch self {
+        case .vietnamese: return [.asciiPlus, .grid4x8]
+        case .english: return [.qwerty]
+        case .chinese: return [.microsoftShuangpin]
+        }
+    }
+    var outputs: [OutputType] {
+        switch self {
+        case .vietnamese: return [.sieuviet, .quocNgu]
+        case .english: return [.literal]
+        case .chinese: return [.simplifiedChinese]
+        }
+    }
+    var displayName: String { AppCopy.text("keyboardLanguage." + legacyName) }
+    /// Copy keys and 0.15 Apple storage use the spelled-out name.
+    var legacyName: String { self == .vietnamese ? "vietnamese" : self == .english ? "english" : "chinese" }
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let value = try container.decode(String.self)
+        if let language = Self(rawValue: value) ?? Self.allCases.first(where: { $0.legacyName == value }) { self = language }
+        else { throw DecodingError.dataCorruptedError(in: container, debugDescription: "Unknown keyboard language") }
+    }
+}
+
+// How ASCII+ keys spell Vietnamese: by sound (siêu việt) or by quốc ngữ letters.
+enum InputMode: String, Codable, CaseIterable {
+    case sieuviet, quocNgu = "quốc ngữ"
+    var displayName: String { self == .sieuviet ? AppDesign.name : rawValue }
+    var inventory: VietnamesePhoneticInventory { self == .sieuviet ? .sieuviet : .quocNgu }
+    var keymap: ASCIIPlusKeymap { self == .sieuviet ? .sieuviet : .quocNgu }
+}
+
 struct KeyboardProfile: Codable, Equatable, Identifiable {
     var id: UUID
     var name: String
-    var language: KeyboardLanguage
+    var language: KeyboardLanguage = .vietnamese
     var inputType: InputType
     var inputMode: InputMode = .sieuviet
     var outputType: OutputType
     var showVirtualKeyboard: Bool
-    var suggestionsEnabled: Bool
+    var suggestionsEnabled: Bool = true
     var asciiPlusKeymap: ASCIIPlusKeymap? = nil
     var displayName: String {
         ["Default keyboard", "Vietnamese", "Bàn phím mặc định"].contains(name) ? language.displayName : name
     }
-    init(id: UUID, name: String, inputType: InputType, outputType: OutputType, showVirtualKeyboard: Bool = true,
-         suggestionsEnabled: Bool = true) {
+    init(id: UUID, name: String, language: KeyboardLanguage? = nil, inputType: InputType, outputType: OutputType,
+         showVirtualKeyboard: Bool = true, suggestionsEnabled: Bool = true) {
         self.id = id
         self.name = name
-        self.language = inputType.language
+        self.language = language ?? inputType.language
         self.inputType = inputType
         self.outputType = outputType
         self.showVirtualKeyboard = showVirtualKeyboard
         self.suggestionsEnabled = suggestionsEnabled
+        normalize()
+    }
+    /// Literal keyboards type plain text; the engine's literal mode implements them.
+    var isLiteral: Bool { language == .english }
+    /// Keep the input and output within those the language allows.
+    mutating func normalize() {
+        if !language.inputs.contains(inputType) { inputType = language.inputs[0] }
+        if !language.outputs.contains(outputType) { outputType = language.outputs[0] }
     }
     private enum CodingKeys: String, CodingKey {
         case id, name, language, inputType, inputMode, outputType, showVirtualKeyboard, suggestionsEnabled, asciiPlusKeymap
@@ -82,26 +111,25 @@ struct KeyboardProfile: Codable, Equatable, Identifiable {
         let values = try decoder.container(keyedBy: CodingKeys.self)
         id = try values.decode(UUID.self, forKey: .id)
         name = try values.decode(String.self, forKey: .name)
-        inputType = try values.decode(InputType.self, forKey: .inputType)
-        language = try values.decodeIfPresent(KeyboardLanguage.self, forKey: .language) ?? inputType.language
-        inputMode = try values.decodeIfPresent(InputMode.self, forKey: .inputMode) ?? .sieuviet
-        outputType = try values.decode(OutputType.self, forKey: .outputType)
+        let input = try? values.decode(InputType.self, forKey: .inputType)
+        language = (try? values.decodeIfPresent(KeyboardLanguage.self, forKey: .language)) ?? input?.language ?? .vietnamese
+        inputType = input ?? language.inputs[0]
+        inputMode = (try? values.decodeIfPresent(InputMode.self, forKey: .inputMode)) ?? .sieuviet
+        outputType = (try? values.decode(OutputType.self, forKey: .outputType)) ?? language.outputs[0]
         showVirtualKeyboard = try values.decodeIfPresent(Bool.self, forKey: .showVirtualKeyboard) ?? true
         suggestionsEnabled = try values.decodeIfPresent(Bool.self, forKey: .suggestionsEnabled) ?? true
         asciiPlusKeymap = try values.decodeIfPresent(ASCIIPlusKeymap.self, forKey: .asciiPlusKeymap)
         normalize()
     }
-    mutating func normalize() {
-        if !language.inputTypes.contains(inputType) { inputType = language.inputTypes[0] }
-        if !language.outputs.contains(outputType) { outputType = language.outputs[0] }
-    }
     static func makeDefault() -> KeyboardProfile {
-        KeyboardProfile(id: UUID(), name: "Vietnamese", inputType: .asciiPlus, outputType: .sieuviet)
+        KeyboardProfile(id: UUID(), name: "Default keyboard", inputType: .grid4x8, outputType: .sieuviet)
     }
     static func makeEnglish() -> KeyboardProfile {
-        KeyboardProfile(id: UUID(), name: "English", inputType: .english, outputType: .english, showVirtualKeyboard: false)
+        KeyboardProfile(id: UUID(), name: "English", language: .english, inputType: .qwerty, outputType: .literal)
     }
     static func makeChinese() -> KeyboardProfile {
-        KeyboardProfile(id: UUID(), name: "Chinese · 微软双拼", inputType: .microsoftShuangpin, outputType: .simplifiedChinese)
+        KeyboardProfile(id: UUID(), name: "Chinese · 微软双拼", language: .chinese, inputType: .microsoftShuangpin, outputType: .simplifiedChinese)
     }
+    /// A new list types Vietnamese, and a Shift tap reaches English, as before keyboards were listed.
+    static func makeDefaultList() -> [KeyboardProfile] { [makeDefault(), makeEnglish()] }
 }
