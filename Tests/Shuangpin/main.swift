@@ -25,7 +25,18 @@ type("udpnpn")
 expect(engine.candidates.first?.pinyin == "shuang pin pin" && engine.candidates.first?.text.count == 3, "Unknown phrases join known segments")
 _ = engine.cancel()
 type("nihk")
-expect(engine.preview == "ni hk", "Marked preview groups two-key syllables")
+expect(engine.preview == "nihao", "Marked preview spells pinyin, not keys")
+for (code, spelled) in [("j;", "jing"), ("q;", "qing"), ("jm", "jian"), ("lt", "lue"), ("ly", "lü"), ("lo", "luo"), ("ol", "ai"),
+                        ("xioj", "xi'an"), ("vsgo", "zhongguo"), ("udpn", "shuangpin"), ("v", "zh"), ("jyo", "ju'")] {
+    expect(MicrosoftShuangpin.spell(code) == spelled, "Spelled pinyin: \(code) → \(MicrosoftShuangpin.spell(code)), expected \(spelled)")
+}
+for (key, code, label) in [("v", "", "zh"), ("i", "ni", "ch"), ("o", "", "'"), ("m", "j", "ian"), ("y", "l", "ü"), ("y", "j", "u"),
+                            ("d", "g", "uang"), ("d", "x", "iang"), ("s", "j", "iong"), ("s", "l", "ong"), ("j", "o", "an"), ("a", "a", "a")] {
+    expect(MicrosoftShuangpin.label(forKey: key, after: code) == label,
+           "Key label: \(key) after \(code) → \(MicrosoftShuangpin.label(forKey: key, after: code) ?? "nil"), expected \(label)")
+}
+expect(MicrosoftShuangpin.label(forKey: "m", after: "g") == nil, "Keys that make no syllable after the initial show nothing")
+expect(MicrosoftShuangpin.label(forKey: ";", after: "") == nil, "Semicolon shows nothing at a syllable start")
 let index = engine.candidates.firstIndex { $0.text == "你好" }!
 engine.moveSelection(index)
 expect(engine.choose() == .commit("你好") && !engine.isPending, "Space commits chosen phrase without trailing spaces")

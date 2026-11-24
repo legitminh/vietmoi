@@ -149,7 +149,7 @@ final class KeyboardPanel: NSObject {
         cards.forEach { $0.0.isHidden = true }
         chineseKeyboard.isHidden = !showKeyboard
         let actions = Dictionary(uniqueKeysWithValues: ASCIIKeyboardLayout.keys.compactMap { key -> (UInt16, String)? in
-            MicrosoftShuangpin.keyLabels[key.label].map { (key.keyCode, $0) }
+            chinese.keyLabel(key.label).map { (key.keyCode, $0) }
         })
         chineseKeyboard.update(actions: actions, literal: false)
         for (index, button) in suggestionLabels.enumerated() {

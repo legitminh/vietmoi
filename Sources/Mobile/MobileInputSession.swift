@@ -167,7 +167,7 @@ extension MobileTextDocument {
     }
     func label(for key: ASCIIKey) -> String? {
         if key.keyCode == 56 { return nextProfile.language == .english ? "ABC" : nextProfile.language == .chinese ? "中" : "VIỆT" }
-        if keyboardLanguage == .chinese { return MicrosoftShuangpin.keyLabels[key.label] }
+        if keyboardLanguage == .chinese { return chinese.keyLabel(key.label) }
         if ascii { return key.label }
         if input == .grid4x8 {
             guard let index = GridKey.index(keyCode: key.keyCode) else { return nil }
@@ -180,7 +180,7 @@ extension MobileTextDocument {
     }
     func accessibilityLabel(for key: ASCIIKey) -> String {
         if key.keyCode == 56 { return AppCopy.text("nextKeyboard") }
-        if keyboardLanguage == .chinese { return key.label + ": " + (MicrosoftShuangpin.keyLabels[key.label] ?? key.label) }
+        if keyboardLanguage == .chinese { return key.label + ": " + (chinese.keyLabel(key.label) ?? AppCopy.text("unavailable")) }
         let action = input == .grid4x8 ? (label(for: key) ?? AppCopy.text("unavailable")) : (ASCIIPlusMapping.actions(for: engine, keymap: engine.keymap)[key.keyCode] ?? AppCopy.text("unavailable"))
         return ascii ? key.label : "\(key.label): \(action == "Clear" ? AppCopy.text("clear") : action)"
     }
