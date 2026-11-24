@@ -17,6 +17,7 @@ class Core {
 public:
     decltype(&sv_engine_create) create{};
     decltype(&sv_engine_create_with_input) createWithInput{};
+    decltype(&sv_adaptive_punctuation) adaptivePunctuation{};
     decltype(&sv_engine_destroy) destroy{};
     decltype(&sv_engine_dispatch) dispatch{};
     decltype(&sv_engine_dispatch_key) dispatchKey{};
@@ -40,7 +41,7 @@ public:
 #define SV_LOAD(member, symbol) member = reinterpret_cast<decltype(member)>(find(#symbol)); if (!member) throw std::runtime_error("Missing " #symbol)
         auto version = reinterpret_cast<decltype(&sv_engine_abi_version)>(find("sv_engine_abi_version"));
         if (!version || version() != 1) throw std::runtime_error("Unsupported Sieuviet C ABI");
-        SV_LOAD(create, sv_engine_create); SV_LOAD(createWithInput, sv_engine_create_with_input); SV_LOAD(destroy, sv_engine_destroy); SV_LOAD(dispatch, sv_engine_dispatch);
+        SV_LOAD(create, sv_engine_create); SV_LOAD(createWithInput, sv_engine_create_with_input); SV_LOAD(adaptivePunctuation, sv_adaptive_punctuation); SV_LOAD(destroy, sv_engine_destroy); SV_LOAD(dispatch, sv_engine_dispatch);
         SV_LOAD(dispatchKey, sv_engine_dispatch_key); SV_LOAD(wantsKey, sv_engine_wants_key);
         SV_LOAD(phase, sv_engine_phase); SV_LOAD(ascii, sv_engine_ascii);
         SV_LOAD(copyText, sv_engine_copy_text); SV_LOAD(copyPreview, sv_engine_copy_preview);

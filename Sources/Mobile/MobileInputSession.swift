@@ -65,6 +65,8 @@ extension MobileTextDocument {
     private let submitCompletion: CompletionSubmit
     private let englishWords: (String) -> [String]
     private var recentCommit: String?
+    /// The automatic Vietnamese block (or adaptive rewrite) just before the caret; see AdaptivePunctuation.
+    private var adaptiveTail: String?
     private var engine: KeyboardEngine
     private var expected: Position?
     private var origin: Position?
@@ -142,7 +144,7 @@ extension MobileTextDocument {
         engine = Self.engine(for: next)
         chinese.completionsEnabled = next.language == .chinese && next.suggestionsEnabled
         invalidateSuggestions()
-        recentCommit = nil
+        recentCommit = nil; adaptiveTail = nil
         scheduleSuggestions()
         onChange?()
     }
@@ -165,7 +167,7 @@ extension MobileTextDocument {
         engine = Self.engine(for: next)
         chinese.completionsEnabled = next.language == .chinese && next.suggestionsEnabled
         invalidateSuggestions()
-        recentCommit = nil
+        recentCommit = nil; adaptiveTail = nil
     }
     func label(for key: ASCIIKey) -> String? {
         if key.keyCode == 56 { return nextProfile.language == .english ? "ABC" : nextProfile.language == .chinese ? "中" : "VIỆT" }
@@ -233,6 +235,8 @@ extension MobileTextDocument {
             let hasPreview = !engine.preview.isEmpty
             apply(engine.finishPartial(suffix: " "))
             if !hasPreview { insertLiteral(" ") }
+            // A typed space is the writer's own: only a completed block's automatic space adapts.
+            adaptiveTail = nil
         }
     }
     func selectSuggestion(at index: Int) {
@@ -249,22 +253,35 @@ extension MobileTextDocument {
         invalidateSuggestions()
         edit {
             finishActiveComposition()
-            recentCommit = nil
+            recentCommit = nil; adaptiveTail = nil
         }
     }
     func moveCursor(by offset: Int) {
         guard offset != 0 else { return }
         edit {
             finishActiveComposition()
-            recentCommit = nil
+            recentCommit = nil; adaptiveTail = nil
             document.moveCursor(by: offset)
             expected = Position(document)
         }
     }
     func literal(_ text: String) {
         guard CompositionText.isSafe(text) else { return }
-        edit { finishActiveComposition(); insertLiteral(text) }
+        edit {
+            finishActiveComposition()
+            // Adaptive punctuation: "mệt quá " + "!" → "mệt quá! ", only over verified text of our own.
+            if let tail = adaptiveTail, let rewrite = AdaptivePunctuation.rewrite(tail: tail, typing: text),
+               document.beforeInput?.hasSuffix(tail) == true, (document.selectedText ?? "").isEmpty {
+                for _ in tail { document.deleteBackward() }
+                insertLiteral(rewrite)
+                adaptiveTail = rewrite
+                return
+            }
+            insertLiteral(text)
+        }
     }
+    /// What the letter layer's comma or period key types for the active keyboard (，。 for Chinese).
+    func letterMark(_ text: String) -> String { LetterLayerPunctuation.mark(text, language: keyboardLanguage) }
     func newline() {
         edit { finishActiveComposition(); insertLiteral("\n") }
     }
@@ -330,7 +347,7 @@ extension MobileTextDocument {
         guard lines != 0 else { return }
         edit {
             finishActiveComposition()
-            recentCommit = nil
+            recentCommit = nil; adaptiveTail = nil
             document.moveCursorVertically(by: lines)
             expected = Position(document)
         }
@@ -365,7 +382,7 @@ extension MobileTextDocument {
         _ = chinese.cancel()
         invalidateSuggestions()
         componentCases.removeAll(); compositionParts.removeAll()
-        recentCommit = nil
+        recentCommit = nil; adaptiveTail = nil
         marked = false
         originalSelection = ""
         origin = nil
@@ -377,7 +394,7 @@ extension MobileTextDocument {
         originalSelection = document.selectedText ?? ""
     }
     private func insertLiteral(_ text: String) {
-        recentCommit = nil
+        recentCommit = nil; adaptiveTail = nil
         let start = Position(document)
         document.insertText(text)
         expected = start.inserting(text)
@@ -385,7 +402,10 @@ extension MobileTextDocument {
     private func acceptSuggestion(_ suffix: String) {
         finishActiveComposition()
         insertLiteral(suffix + " ")
+        if adaptive { adaptiveTail = suffix + " " }
     }
+    /// Vietnamese blocks and completions arm adaptive punctuation when this keyboard enables it.
+    private var adaptive: Bool { keyboardLanguage == .vietnamese && !engine.ascii && profile.adaptivePunctuation }
     private func apply(_ effect: EngineEffect) {
         switch effect {
         case .marked(let text):
@@ -416,6 +436,7 @@ extension MobileTextDocument {
             } else { insertLiteral(text) }
             resetMark()
             recentCommit = text
+            adaptiveTail = adaptive ? text : nil
         case .cancel:
             if marked {
                 document.setMarkedText(originalSelection)
@@ -426,9 +447,9 @@ extension MobileTextDocument {
         case .none: break
         case .deleteCycle:
             guard let text = recentCommit, document.beforeInput?.hasSuffix(text) == true,
-                  (document.selectedText ?? "").isEmpty else { recentCommit = nil; return }
+                  (document.selectedText ?? "").isEmpty else { recentCommit = nil; adaptiveTail = nil; return }
             for _ in text { document.deleteBackward() }
-            recentCommit = nil
+            recentCommit = nil; adaptiveTail = nil
             expected = Position(document)
         }
     }

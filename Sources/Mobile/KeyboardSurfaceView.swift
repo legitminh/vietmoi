@@ -83,8 +83,8 @@ final class KeyboardSurfaceView: UIInputView {
         cursorGesture.allowableMovement = 18
         cursorGesture.cancelsTouchesInView = true
         space.addGestureRecognizer(cursorGesture)
-        configureTyping(comma, title: ",", id: "keyboard.comma") { [weak self] _ in self?.session.literal(",") }
-        configureTyping(period, title: ".", id: "keyboard.period") { [weak self] _ in self?.session.literal(".") }
+        configureTyping(comma, title: ",", id: "keyboard.comma") { [weak self] _ in self?.typeFooterMark(",") }
+        configureTyping(period, title: ".", id: "keyboard.period") { [weak self] _ in self?.typeFooterMark(".") }
         configureTyping(enter, title: "", id: "keyboard.return") { [weak self] _ in self?.session.newline() }
         enter.setImage(UIImage(systemName: "return"), for: .normal)
         style(backspace, id: "keyboard.backspace")
@@ -232,6 +232,8 @@ final class KeyboardSurfaceView: UIInputView {
         }
         numbers.isSelected = symbolState.page == .numbers
         moreSymbols.isSelected = symbolState.page == .symbols
+        comma.setTitle(footerMark(","), for: .normal)
+        period.setTitle(footerMark("."), for: .normal)
         // A second finger can complete a round while another is still held.
         // Re-target that held touch against the newly enabled keys as well.
         for (touch, previous) in trackedTouches {
@@ -430,6 +432,9 @@ final class KeyboardSurfaceView: UIInputView {
             self.symbolState.end(page, at: ProcessInfo.processInfo.systemUptime, cancelled: true); self.render()
         }, for: .touchCancel)
     }
+    /// The letter layer types the keyboard's own marks (，。 for Chinese); number and symbol panes keep , and .
+    private func footerMark(_ text: String) -> String { symbolState.page == .letters ? session.letterMark(text) : text }
+    private func typeFooterMark(_ text: String) { session.literal(footerMark(text)) }
     private func configureTyping(_ button: KeyboardKeyButton, title: String, id: String, action: @escaping (MobileLetterCase) -> Void) {
         style(button, id: id); button.setTitle(title, for: .normal)
         addTypingAction(button, action: action)

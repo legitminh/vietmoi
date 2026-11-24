@@ -55,6 +55,17 @@ int main(void) {
     CHECK(sv_engine_dispatch_key(NULL, 0, 4) == SV_INVALID_ARGUMENT);
     CHECK(sv_engine_copy_guide(NULL, 0, NULL, 0) == SV_INVALID_ARGUMENT);
 
+    /* Adaptive punctuation: a phrase mark replaces a block's automatic space. */
+    {
+        char rewrite[64];
+        CHECK(sv_adaptive_punctuation("quá ", "!", NULL, 0) == (int64_t)sizeof "quá! ");
+        CHECK(sv_adaptive_punctuation("quá ", "!", rewrite, sizeof rewrite) == (int64_t)sizeof "quá! ");
+        CHECK(strcmp(rewrite, "quá! ") == 0);
+        CHECK(sv_adaptive_punctuation("quá ", "a", rewrite, sizeof rewrite) == 0);
+        CHECK(sv_adaptive_punctuation("quá", ".", rewrite, sizeof rewrite) == 0);
+        CHECK(sv_adaptive_punctuation(NULL, ".", rewrite, sizeof rewrite) == 0);
+    }
+
     /* Quốc ngữ input mode spells with quốc ngữ's choices, into either output. */
     CHECK(sv_engine_create_with_input(SV_QUOC_NGU, 2) == NULL);
     CHECK(sv_engine_create_with_input(2, SV_INPUT_QUOC_NGU) == NULL);

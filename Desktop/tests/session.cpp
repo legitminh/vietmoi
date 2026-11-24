@@ -79,7 +79,7 @@ int main(int argc, char **argv) {
           auto settings = sv::parseSettings(file);
           check(settings.keyboards.size() == 3 && settings.keyboards[0].name == "Grid, phở" && settings.keyboards[0].input == 1 && settings.keyboards[0].output == 1, "version 2 list");
           check(settings.keyboards[0].mode == 0 && settings.keyboards[2].mode == 0, "version 2 keyboards spell with siêu việt input");
-          check(sv::formatSettings(settings) == "version=3\nlanguage=en\nactive=B\nkeyboard=A,vi,grid4x8,sieuviet,quốc ngữ,Grid, phở\nkeyboard=B,en,qwerty,sieuviet,literal,English\nkeyboard=C,vi,ascii+,sieuviet,sieuviet,Mine\n", "version 2 upgrades to version 3");
+          check(sv::formatSettings(settings) == "version=4\nlanguage=en\nactive=B\nkeyboard=A,vi,grid4x8,sieuviet,quốc ngữ,1,Grid, phở\nkeyboard=B,en,qwerty,sieuviet,literal,1,English\nkeyboard=C,vi,ascii+,sieuviet,sieuviet,1,Mine\n", "version 2 upgrades to version 4");
           Document doc; sv::Session session(core, doc, settings);
           check(session.keyboard().id == "B" && session.ascii(), "active keyboard opens");
           tap(session); check(session.keyboard().id == "C" && !session.ascii(), "tap moves to the next keyboard");
@@ -99,6 +99,19 @@ int main(int argc, char **argv) {
           Document doc; sv::Session session(core, doc, settings);
           type(session,"qlcd"); check(doc.text == "quốc ", "quốc ngữ input mode types quốc ngữ spelling");
           tap(session); type(session,"zses"); check(doc.text == "quốc za ", "quốc ngữ input reaches siêu việt output"); }
+        { std::istringstream file("version=4\nlanguage=vi\nactive=P\nkeyboard=P,vi,ascii+,sieuviet,quốc ngữ,1,On\nkeyboard=O,vi,ascii+,sieuviet,quốc ngữ,0,Off, too\n");
+          auto settings = sv::parseSettings(file);
+          check(settings.keyboards.size() == 2 && settings.keyboards[0].adaptive && !settings.keyboards[1].adaptive && settings.keyboards[1].name == "Off, too", "version 4 adaptive punctuation");
+          std::istringstream again(sv::formatSettings(settings)); check(sv::parseSettings(again) == settings, "version 4 round trip");
+          Document doc; sv::Session session(core, doc, settings);
+          auto mark = [&](uint16_t hid, bool shift, char32_t text) {
+              const bool handled = session.key({hid,true,false,shift,false,false,clockTime += 1,text});
+              session.key({hid,false,false,shift,false,false,clockTime += .05,text}); return handled; };
+          type(session,"msed"); check(mark(0x1e,true,U'!') && doc.text == "má! ", "a mark replaces a block's automatic space");
+          check(mark(0x37,false,U'.') && doc.text == "má!. ", "marks chain");
+          check(!mark(0x2d,false,U'-') && !mark(0x37,false,U'.') && doc.text == "má!. ", "other keys end the block");
+          tap(session); type(session,"msed");
+          check(session.keyboard().id == "O" && !mark(0x36,false,U',') && doc.text == "má!. má ", "the keyboard setting turns it off"); }
         { std::istringstream file("version=1\ninput=1\noutput=1\nlanguage=vi\n");
           auto list = sv::keyboardList(sv::parseSettings(file));
           check(list.size() == 2 && list[0].input == 1 && list[0].output == 1 && list[1].literal(), "version 1 migrates to [Vietnamese, English]"); }

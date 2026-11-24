@@ -141,6 +141,10 @@ inline constexpr Copy copy[] = {
     {"exit", "thoát", "exit", "退出"},
     {"inputModeLabel", "kiểu gõ", "input", "输入方式"},
     {"inputModeProfile", "kiểu gõ cho {name}", "input for {name}", "{name} 的输入方式"},
+    {"adaptivePunctuation", "dấu câu thích ứng", "adaptive punctuation", "自适应标点"},
+    {"adaptivePunctuationOn", "dấu câu thích ứng: bật", "adaptive punctuation: on", "自适应标点：开"},
+    {"adaptivePunctuationOff", "dấu câu thích ứng: tắt", "adaptive punctuation: off", "自适应标点：关"},
+    {"adaptivePunctuationHelp", "sau một khối tiếng việt, , . ? ! ; : thay khoảng trắng tự động rồi thêm một khoảng trắng: \"mệt quá \" + \"!\" → \"mệt quá! \".", "after a vietnamese block, , . ? ! ; : replace its automatic space and then add one: \"mệt quá \" + \"!\" → \"mệt quá! \".", "在越南语音节块之后，, . ? ! ; : 会替换自动空格并在后面加一个空格：\"mệt quá \" + \"!\" → \"mệt quá! \"。"},
 };
 // Interface languages: Vietnamese (default), English and Chinese.
 inline std::string supportedLanguage(const std::string &value) { return value == "en" || value == "zh" ? value : "vi"; }

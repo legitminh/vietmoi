@@ -5,34 +5,35 @@
 #include <sstream>
 
 namespace sv {
-// settings.conf, version 3: one `keyboard=` line per managed keyboard, in Shift
+// settings.conf, version 4: one `keyboard=` line per managed keyboard, in Shift
 // order, with the same values as every other siêu việt app:
-//   keyboard=<id>,<vi|en>,<ascii+|grid4x8|qwerty>,<input mode: sieuviet|quốc ngữ>,<sieuviet|quốc ngữ|literal>,<name>
+//   keyboard=<id>,<vi|en>,<ascii+|grid4x8|qwerty>,<input mode: sieuviet|quốc ngữ>,<sieuviet|quốc ngữ|literal>,<adaptive punctuation: 1|0>,<name>
 //   active=<id>
-// Version 2 lines have no input mode (siêu việt). Version 1 snapshots (input=,
-// output=) load as [that keyboard, English].
-inline Keyboard parseKeyboard(const std::string &value, int version = 3) {
-    Keyboard result; std::string fields[5]; size_t start = 0;
-    const int count = version >= 3 ? 5 : 4;
+// Version 3 lines have no adaptive field (on); version 2 lines also have no input
+// mode (siêu việt). Version 1 snapshots (input=, output=) load as [that keyboard, English].
+inline Keyboard parseKeyboard(const std::string &value, int version = 4) {
+    Keyboard result; std::string fields[6]; size_t start = 0;
+    const int count = version >= 4 ? 6 : version >= 3 ? 5 : 4;
     for (int index = 0; index < count; ++index) {
         const auto comma = value.find(',', start);
         if (comma == std::string::npos) return {};
         fields[index] = value.substr(start, comma - start); start = comma + 1;
     }
-    const auto &mode = count == 5 ? fields[3] : fields[4];
-    const auto &output = count == 5 ? fields[4] : fields[3];
+    const auto &mode = count >= 5 ? fields[3] : fields[4];
+    const auto &output = count >= 5 ? fields[4] : fields[3];
     result.id = fields[0]; result.name = value.substr(start);
     result.language = fields[1] == "en" ? "en" : "vi";
     result.input = !result.literal() && fields[2] == "grid4x8" ? 1 : 0;
     result.mode = !result.literal() && mode == "quốc ngữ" ? 1 : 0;
     result.output = !result.literal() && output == "quốc ngữ" ? 1 : 0;
+    result.adaptive = count < 6 || fields[5] != "0";
     return result;
 }
 inline std::string formatKeyboard(const Keyboard &keyboard) {
-    if (keyboard.literal()) return keyboard.id + ",en,qwerty,sieuviet,literal," + keyboard.name;
+    if (keyboard.literal()) return keyboard.id + ",en,qwerty,sieuviet,literal,1," + keyboard.name;
     return keyboard.id + ",vi," + (keyboard.input == 1 ? "grid4x8" : "ascii+") + "," +
            (keyboard.mode == 1 ? "quốc ngữ" : "sieuviet") + "," +
-           (keyboard.output == 1 ? "quốc ngữ" : "sieuviet") + "," + keyboard.name;
+           (keyboard.output == 1 ? "quốc ngữ" : "sieuviet") + "," + (keyboard.adaptive ? "1" : "0") + "," + keyboard.name;
 }
 inline Settings parseSettings(std::istream &file) {
     Settings result; std::string line; int version = 1;
@@ -53,7 +54,7 @@ inline Settings parseSettings(std::istream &file) {
 }
 inline Settings loadSettings(const std::filesystem::path &path) { std::ifstream file(path); return parseSettings(file); }
 inline std::string formatSettings(const Settings &settings) {
-    std::string result = "version=3\nlanguage=" + settings.language + "\n";
+    std::string result = "version=4\nlanguage=" + settings.language + "\n";
     const auto list = keyboardList(settings);
     result += "active=" + (settings.active.empty() ? list.front().id : settings.active) + "\n";
     if (!settings.shiftTapSeconds.empty()) result += "shiftTapSeconds=" + settings.shiftTapSeconds + "\n";

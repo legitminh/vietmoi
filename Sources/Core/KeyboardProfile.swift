@@ -107,6 +107,8 @@ struct KeyboardProfile: Equatable, Identifiable {
     var outputType: OutputType
     var showVirtualKeyboard: Bool
     var suggestionsEnabled: Bool = true
+    /// Vietnamese only: a phrase mark right after a block replaces its automatic space ("quá !" → "quá! ").
+    var adaptivePunctuation: Bool = true
     var asciiPlusKeymap: ASCIIPlusKeymap? = nil
     #if !hasFeature(Embedded)
     var displayName: String {
@@ -146,7 +148,7 @@ struct KeyboardProfile: Equatable, Identifiable {
 #if !hasFeature(Embedded)
 extension KeyboardProfile: Codable {
     private enum CodingKeys: String, CodingKey {
-        case id, name, language, inputType, inputMode, outputType, showVirtualKeyboard, suggestionsEnabled, asciiPlusKeymap
+        case id, name, language, inputType, inputMode, outputType, showVirtualKeyboard, suggestionsEnabled, adaptivePunctuation, asciiPlusKeymap
     }
     init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
@@ -159,6 +161,7 @@ extension KeyboardProfile: Codable {
         outputType = (try? values.decode(OutputType.self, forKey: .outputType)) ?? language.outputs[0]
         showVirtualKeyboard = try values.decodeIfPresent(Bool.self, forKey: .showVirtualKeyboard) ?? true
         suggestionsEnabled = try values.decodeIfPresent(Bool.self, forKey: .suggestionsEnabled) ?? true
+        adaptivePunctuation = (try? values.decodeIfPresent(Bool.self, forKey: .adaptivePunctuation)) ?? true
         asciiPlusKeymap = try values.decodeIfPresent(ASCIIPlusKeymap.self, forKey: .asciiPlusKeymap)
         normalize()
     }

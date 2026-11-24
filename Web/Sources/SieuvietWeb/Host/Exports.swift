@@ -106,7 +106,7 @@ func svOutput() -> UnsafeMutablePointer<UInt8> { outputBuffer }
 private let languages: [String: KeyboardLanguage] = ["vi": .vietnamese, "en": .english, "zh": .chinese]
 
 /// Lines: "activeID\tinterfaceLanguage\tshiftTapSeconds", then per keyboard
-/// "id\tlanguage\tinputType\toutputType\tinputMode\tsuggestions(1/0)\tname".
+/// "id\tlanguage\tinputType\toutputType\tinputMode\tsuggestions(1/0)\tname[\tadaptivePunctuation(1/0)]".
 @_expose(wasm, "sv_configure") @_cdecl("sv_configure")
 func svConfigure(_ length: Int32) {
     onMain {
@@ -122,6 +122,7 @@ func svConfigure(_ length: Int32) {
                                           outputType: OutputType(rawValue: line[3]) ?? language.outputs[0],
                                           suggestionsEnabled: line[5] == "1")
             profile.inputMode = InputMode(rawValue: line[4]) ?? .sieuviet
+            profile.adaptivePunctuation = line.count < 8 || line[7] != "0"
             profiles.append(profile)
         }
         guard !profiles.isEmpty else { return }
@@ -202,7 +203,8 @@ func svKey(_ length: Int32, _ flags: Int32) -> Int32 {
             default:
                 let routable = session.rows.contains { row in row.contains { $0.label == position && $0.keyCode != 56 } }
                 let digit = Int(position).flatMap { (1...9).contains($0) ? $0 : nil }
-                if let digit = digit, chinese ? session.pending : (session.keyboardLanguage == .vietnamese && session.input == .asciiPlus),
+                // Shift+digit types its symbol ("!"), never a suggestion.
+                if let digit = digit, !shift, chinese ? session.pending : (session.keyboardLanguage == .vietnamese && session.input == .asciiPlus),
                    session.suggestions.indices.contains(digit - 1), !routable || chinese {
                     // Number keys choose a candidate (Chinese) or an ASCII+ suggestion, as on the Mac.
                     session.selectSuggestion(at: digit - 1)
@@ -329,6 +331,8 @@ func svState() -> Int32 {
         json.key("uppercase"); json.bool(host.touchShift.uppercase)
         json.key("capsLock"); json.bool(host.touchShift.capsLock)
         json.key("page"); json.int(host.symbols.page.rawValue)
+        // The letter layer's comma and period for this keyboard (，。 for Chinese).
+        json.key("marks"); json.strings([session.letterMark(","), session.letterMark(".")])
         json.key("symbols"); json.raw("[")
         for (index, rows) in TouchKeyboardSymbols.pages.enumerated() {
             if index > 0 { json.raw(",") }

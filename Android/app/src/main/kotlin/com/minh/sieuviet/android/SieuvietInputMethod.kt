@@ -105,6 +105,9 @@ class SieuvietInputMethod : InputMethodService() {
             }
         }
         current.finish()
+        // A hardware phrase mark may attach to the block before it; any other key ends that block.
+        val typed = event.getUnicodeChar(event.metaState)
+        if (current.punctuate(if (typed > 0) String(Character.toChars(typed)) else "")) return true
         return super.onKeyDown(keyCode, event)
     }
     override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {

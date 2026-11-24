@@ -10,13 +10,14 @@
 namespace sv {
 // One managed keyboard. Vietnamese keyboards choose an input layout (0 ASCII+,
 // 1 grid4x8), an input mode (0 siêu việt, 1 quốc ngữ: what the keys spell) and an
-// output (0 siêu việt, 1 quốc ngữ); English keyboards type literally.
+// output (0 siêu việt, 1 quốc ngữ); English keyboards type literally. `adaptive`:
+// a phrase mark after a block replaces its automatic space (AdaptivePunctuation).
 struct Keyboard {
-    std::string id, name, language = "vi"; int input = 0; int output = 0; int mode = 0;
+    std::string id, name, language = "vi"; int input = 0; int output = 0; int mode = 0; bool adaptive = true;
     bool literal() const { return language == "en"; }
 };
 inline bool operator==(const Keyboard &a, const Keyboard &b) {
-    return a.id == b.id && a.name == b.name && a.language == b.language && a.input == b.input && a.output == b.output && a.mode == b.mode;
+    return a.id == b.id && a.name == b.name && a.language == b.language && a.input == b.input && a.output == b.output && a.mode == b.mode && a.adaptive == b.adaptive;
 }
 inline bool operator!=(const Keyboard &a, const Keyboard &b) { return !(a == b); }
 // `input` and `output` describe the Vietnamese keyboard of a legacy snapshot that
@@ -33,7 +34,16 @@ inline std::vector<Keyboard> keyboardList(const Settings &settings) {
     if (!settings.keyboards.empty()) return settings.keyboards;
     return {Keyboard{"vi", "Tiếng Việt", "vi", settings.input, settings.output}, Keyboard{"en", "English", "en", 0, 0}};
 }
-struct Key { uint16_t usage = 0; bool down = true; bool repeat = false; bool shift = false; bool shortcut = false; bool selection = false; double time = 0; };
+// `text` is the character the key types in the current layout, when the adapter knows it.
+struct Key { uint16_t usage = 0; bool down = true; bool repeat = false; bool shift = false; bool shortcut = false; bool selection = false; double time = 0; char32_t text = 0; };
+inline std::string utf8(char32_t value) {
+    std::string result;
+    if (value < 0x80) result += static_cast<char>(value);
+    else if (value < 0x800) { result += static_cast<char>(0xc0 | (value >> 6)); result += static_cast<char>(0x80 | (value & 0x3f)); }
+    else if (value < 0x10000) { result += static_cast<char>(0xe0 | (value >> 12)); result += static_cast<char>(0x80 | ((value >> 6) & 0x3f)); result += static_cast<char>(0x80 | (value & 0x3f)); }
+    else { result += static_cast<char>(0xf0 | (value >> 18)); result += static_cast<char>(0x80 | ((value >> 12) & 0x3f)); result += static_cast<char>(0x80 | ((value >> 6) & 0x3f)); result += static_cast<char>(0x80 | (value & 0x3f)); }
+    return result;
+}
 struct Document {
     virtual ~Document() = default;
     virtual bool preedit(const std::string &) = 0;
@@ -48,13 +58,15 @@ class Session {
     Core &core_; Document &document_; sv_engine_t engine_{}; Settings settings_;
     std::vector<Keyboard> keyboards_; size_t index_ = 0; std::string seenActive_;
     std::string recent_; std::set<uint16_t> held_;
+    std::string tail_; // the automatic block before the caret, for adaptive punctuation
     bool apply(int effect) {
         bool success = true;
         const auto text = Core::read(core_.copyText, engine_);
         switch (effect) {
         case SV_NONE: break;
         case SV_MARKED: recent_.clear(); success = document_.preedit(text); break;
-        case SV_COMMIT: success = document_.commit(text); recent_ = success ? text : ""; break;
+        case SV_COMMIT: success = document_.commit(text); recent_ = success ? text : "";
+            tail_ = success && adaptive() ? text : ""; break;
         case SV_CANCELLED: success = document_.cancel(); recent_.clear(); break;
         case SV_DELETE_CYCLE:
             if (!recent_.empty()) document_.clearVerified(recent_);
@@ -72,6 +84,22 @@ class Session {
         auto engine = core_.createWithInput(keyboard.output, keyboard.literal() ? 0 : keyboard.mode);
         if (engine && keyboard.literal()) core_.dispatch(engine, SV_TOGGLE_ASCII, 0);
         return engine;
+    }
+    bool adaptive() const { return !keyboard().literal() && keyboard().adaptive && !ascii(); }
+    /// "quá " + "!" → "quá! ": replace the verified block before the caret with its rewrite.
+    bool punctuate(const std::string &tail, const Key &event) {
+        if (tail.empty() || !event.text || event.shortcut || pending()) return false;
+        if (!event.shift && core_.wantsKey(engine_, keyboard().input, event.usage) == 1) return false;
+        const auto typed = utf8(event.text);
+        const auto size = core_.adaptivePunctuation(tail.c_str(), typed.c_str(), nullptr, 0);
+        if (size <= 1) return false;
+        std::string rewrite(static_cast<size_t>(size), '\0');
+        if (core_.adaptivePunctuation(tail.c_str(), typed.c_str(), rewrite.data(), rewrite.size()) != size) return false;
+        rewrite.pop_back();
+        if (!document_.clearVerified(tail)) return false;
+        recent_.clear();
+        if (document_.commit(rewrite)) tail_ = rewrite;
+        return true;
     }
 public:
     /// `keyboard` is the id the adapter last used; otherwise the snapshot's active keyboard opens.
@@ -113,7 +141,7 @@ public:
             core_.destroy(engine_); engine_ = replacement;
         }
         settings_ = settings; keyboards_ = std::move(list); index_ = index; seenActive_ = settings.active;
-        recent_.clear(); held_.clear(); return true;
+        recent_.clear(); tail_.clear(); held_.clear(); return true;
     }
     /// Finish the word in progress and move to another keyboard of the list.
     bool select(size_t index) {
@@ -127,7 +155,7 @@ public:
         index_ = index; return true;
     }
     bool next() { return select((index_ + 1) % keyboards_.size()); }
-    void invalidate() { core_.dispatch(engine_, SV_CANCEL, 0); recent_.clear(); held_.clear(); }
+    void invalidate() { core_.dispatch(engine_, SV_CANCEL, 0); recent_.clear(); tail_.clear(); held_.clear(); }
     void finish() { if (pending()) apply(core_.dispatch(engine_, SV_FINISH, 0)); }
     bool command(int command) { return apply(core_.dispatch(engine_, command, 0)); }
     bool key(Key event) {
@@ -137,12 +165,16 @@ public:
         if (core_.observe(engine_, event.usage, event.down ? 1 : 0, event.time, event.shortcut ? 1 : 0) == 1) next();
         if (!event.down) return false;
         if (event.usage >= 0xe0 && event.usage <= 0xe7) return false;
+        // Any other key ends the automatic block; a phrase mark may attach to it first.
+        const auto tail = std::move(tail_); tail_.clear();
+        if (punctuate(tail, event)) return true;
         if (event.shortcut) { finish(); recent_.clear(); return false; }
         if (event.usage == 0x2a && pending()) { command(SV_BACKSPACE); return true; }
         if (event.usage == 0x29 && pending()) { command(SV_CANCEL); return true; }
         if (event.usage == 0x4c && !ascii() && !event.selection && (pending() || !recent_.empty())) { command(SV_CLEAR); return true; }
         if (event.shift) { finish(); recent_.clear(); return false; }
-        if (event.usage == 0x2c && pending()) { command(SV_SPACE); return true; }
+        // A typed space is the writer's own: only a completed block's automatic space adapts.
+        if (event.usage == 0x2c && pending()) { command(SV_SPACE); tail_.clear(); return true; }
         if (core_.wantsKey(engine_, keyboard().input, event.usage) == 1) {
             if (!event.repeat) apply(core_.dispatchKey(engine_, keyboard().input, event.usage));
             return true;

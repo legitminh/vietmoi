@@ -146,6 +146,10 @@ enum AppCopy {
         "exit": "thoát",
         "inputModeLabel": "kiểu gõ",
         "inputModeProfile": "kiểu gõ cho {name}",
+        "adaptivePunctuation": "dấu câu thích ứng",
+        "adaptivePunctuationOn": "dấu câu thích ứng: bật",
+        "adaptivePunctuationOff": "dấu câu thích ứng: tắt",
+        "adaptivePunctuationHelp": "sau một khối tiếng việt, , . ? ! ; : thay khoảng trắng tự động rồi thêm một khoảng trắng: \"mệt quá \" + \"!\" → \"mệt quá! \".",
     ]
     private static let english: [String: String] = [
         "tagline": "vietnamese, one choice at a time.",
@@ -282,6 +286,10 @@ enum AppCopy {
         "exit": "exit",
         "inputModeLabel": "input",
         "inputModeProfile": "input for {name}",
+        "adaptivePunctuation": "adaptive punctuation",
+        "adaptivePunctuationOn": "adaptive punctuation: on",
+        "adaptivePunctuationOff": "adaptive punctuation: off",
+        "adaptivePunctuationHelp": "after a vietnamese block, , . ? ! ; : replace its automatic space and then add one: \"mệt quá \" + \"!\" → \"mệt quá! \".",
     ]
     private static let chinese: [String: String] = [
         "tagline": "越南语，一次一个选择。",
@@ -418,5 +426,9 @@ enum AppCopy {
         "exit": "退出",
         "inputModeLabel": "输入方式",
         "inputModeProfile": "{name} 的输入方式",
+        "adaptivePunctuation": "自适应标点",
+        "adaptivePunctuationOn": "自适应标点：开",
+        "adaptivePunctuationOff": "自适应标点：关",
+        "adaptivePunctuationHelp": "在越南语音节块之后，, . ? ! ; : 会替换自动空格并在后面加一个空格：\"mệt quá \" + \"!\" → \"mệt quá! \"。",
     ]
 }

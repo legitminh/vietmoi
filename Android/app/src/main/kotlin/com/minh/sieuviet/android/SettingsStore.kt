@@ -10,7 +10,7 @@ import java.io.File
  *  `mode` is what the keys spell: 0 siêu việt's own choices, 1 quốc ngữ's. */
 data class KeyboardProfile(val id: String, val name: String, val language: String = "vi",
                            val input: Int = 0, val output: Int = 0, val showVirtualKeyboard: Boolean = true,
-                           val mode: Int = 0) {
+                           val mode: Int = 0, val adaptive: Boolean = true) {
     /** English keyboards type literal text through the engine's literal mode. */
     val literal: Boolean get() = language == "en"
     fun toJson(): JSONObject = JSONObject().put("id", id).put("name", name).put("language", if (literal) "en" else "vi")
@@ -18,6 +18,7 @@ data class KeyboardProfile(val id: String, val name: String, val language: Strin
         .put("inputMode", if (!literal && mode == 1) "quốc ngữ" else "sieuviet")
         .put("outputType", if (literal) "literal" else if (output == 1) "quốc ngữ" else "sieuviet")
         .put("showVirtualKeyboard", showVirtualKeyboard)
+        .put("adaptivePunctuation", adaptive)
     companion object {
         fun fromJson(data: JSONObject): KeyboardProfile {
             val english = data.optString("language") == "en"
@@ -25,7 +26,8 @@ data class KeyboardProfile(val id: String, val name: String, val language: Strin
                 if (!english && data.optString("inputType") == "grid4x8") 1 else 0,
                 if (!english && data.optString("outputType") == "quốc ngữ") 1 else 0,
                 data.optBoolean("showVirtualKeyboard", true),
-                if (!english && data.optString("inputMode") == "quốc ngữ") 1 else 0)
+                if (!english && data.optString("inputMode") == "quốc ngữ") 1 else 0,
+                data.optBoolean("adaptivePunctuation", true))
         }
     }
 }

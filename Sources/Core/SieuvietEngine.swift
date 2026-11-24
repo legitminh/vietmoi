@@ -33,6 +33,11 @@ public final class SieuvietEngine {
         return VietnamesePredictionEngine.suggestions(context: context, prefix: engine.preview, limit: limit).map(\.suffix)
     }
 
+    /// Adaptive punctuation for hosts outside this module; see AdaptivePunctuation.
+    public static func adaptivePunctuation(tail: String, typing text: String) -> String? {
+        AdaptivePunctuation.rewrite(tail: tail, typing: text)
+    }
+
     public init(output: Output = .sieuviet, input: Input = .sieuviet) {
         engine = KeyboardEngine(outputType: output == .quocNgu ? .quocNgu : .sieuviet, inputMode: input == .quocNgu ? .quocNgu : .sieuviet)
     }

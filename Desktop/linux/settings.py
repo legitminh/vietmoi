@@ -28,17 +28,19 @@ def interface_language(value):
     # Interface languages: Vietnamese (default), English and Chinese.
     return value if value in ('vi', 'en', 'zh') else 'vi'
 
-def profile(identifier, name, language, input_type, output_type, input_mode='sieuviet'):
+def profile(identifier, name, language, input_type, output_type, input_mode='sieuviet', adaptive=True):
     language = 'en' if language == 'en' else 'vi'
     return {'id': identifier or str(uuid.uuid4()).upper(), 'name': name, 'language': language,
             'inputType': input_type if input_type in inputs[language] else inputs[language][0],
             'inputMode': input_mode if input_mode in modes[language] else modes[language][0],
+            'adaptivePunctuation': adaptive is not False,
             'outputType': output_type if output_type in outputs[language] else outputs[language][0],
             'showVirtualKeyboard': True}
 
 
 def load():
-    """Read settings.conf (version 3; version 2 lines have no input mode; version 1 is [that keyboard, English])."""
+    """Read settings.conf (version 4; version 3 lines have no adaptive punctuation field, version 2 lines no
+    input mode either; version 1 is [that keyboard, English])."""
     lines = path.read_text().splitlines() if path.exists() else []
     values, profiles, version = {}, [], 1
     for line in lines:
@@ -46,7 +48,11 @@ def load():
         if key == 'version':
             version = int(value) if value.isdigit() else 1
         elif key == 'keyboard':
-            if version >= 3:
+            if version >= 4:
+                fields = value.split(',', 6)
+                if len(fields) == 7:
+                    profiles.append(profile(fields[0], fields[6], fields[1], fields[2], fields[4], fields[3], fields[5] != '0'))
+            elif version >= 3:
                 fields = value.split(',', 5)
                 if len(fields) == 6:
                     profiles.append(profile(fields[0], fields[5], fields[1], fields[2], fields[4], fields[3]))
@@ -72,13 +78,14 @@ def load():
 
 def save(state):
     profiles = [profile(str(item.get('id') or ''), str(item.get('name', '')).replace('\n', ' '), item.get('language'),
-                        item.get('inputType'), item.get('outputType'), item.get('inputMode')) for item in state.get('profiles', [])]
+                        item.get('inputType'), item.get('outputType'), item.get('inputMode'),
+                        item.get('adaptivePunctuation') is not False) for item in state.get('profiles', [])]
     if not profiles:
         return
     active = state.get('activeID') if any(item['id'] == state.get('activeID') for item in profiles) else profiles[0]['id']
-    text = f"version=3\nlanguage={interface_language(state.get('interfaceLanguage'))}\nactive={active}\n"
+    text = f"version=4\nlanguage={interface_language(state.get('interfaceLanguage'))}\nactive={active}\n"
     text += f"shiftTapSeconds={float(state.get('shiftTapSeconds', 0.2))}\n"
-    text += ''.join(f"keyboard={item['id']},{item['language']},{item['inputType']},{item['inputMode']},{item['outputType']},{item['name']}\n" for item in profiles)
+    text += ''.join(f"keyboard={item['id']},{item['language']},{item['inputType']},{item['inputMode']},{item['outputType']},{int(item['adaptivePunctuation'])},{item['name']}\n" for item in profiles)
     temporary = None
     try:
         path.parent.mkdir(parents=True, exist_ok=True)

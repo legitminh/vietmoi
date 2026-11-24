@@ -205,6 +205,13 @@ class Service : public ITfTextInputProcessorEx, public ITfKeyEventSink,
         const bool shortcut = ((GetKeyState(VK_CONTROL) | GetKeyState(VK_MENU) | GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x8000) != 0;
         sv::Key input{usage, down, down && !!(flags & (1L << 30)), shift, shortcut, false,
             std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count()};
+        if (down && !shortcut) {
+            // The character this key types in the active layout, for adaptive punctuation.
+            // Flag 4 leaves the keyboard's dead-key state untouched.
+            BYTE state[256] = {}; WCHAR typed[4] = {};
+            if (GetKeyboardState(state) && ToUnicodeEx(static_cast<UINT>(vk), scan, state, typed, 4, 4, GetKeyboardLayout(0)) == 1)
+                input.text = static_cast<char32_t>(typed[0]);
+        }
         auto *edit = new Edit([this,input,eaten](TfEditCookie cookie) mutable {
             document_.cookie = cookie; editing_ = true;
             if (disabled()) { session_->invalidate(); document_.cancel(); hide(); editing_ = false; return S_OK; }
