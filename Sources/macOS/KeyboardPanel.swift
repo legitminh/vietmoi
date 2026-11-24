@@ -84,7 +84,7 @@ final class KeyboardPanel: NSObject {
     func show(engine: KeyboardEngine, caret: NSRect?, message: String? = nil,
               inputType: InputType = .grid4x8, asciiActions: [UInt16: String] = [:],
               showKeyboard: Bool = true, suggestions: [String] = [], onChoose: ((Int) -> Void)? = nil) {
-        guard (showKeyboard || !suggestions.isEmpty), SettingsWindow.shared.window?.isVisible != true else { hide(); return }
+        guard (showKeyboard || !suggestions.isEmpty), !SettingsWindow.shared.isFrontmost else { hide(); return }
         self.onChoose = onChoose
         chineseKeyboard.isHidden = true
         let useASCII = inputType == .asciiPlus || engine.ascii
@@ -140,7 +140,7 @@ final class KeyboardPanel: NSObject {
         panel.orderFrontRegardless()
     }
     func show(chinese: ShuangpinEngine, caret: NSRect?, showKeyboard: Bool, onChoose: ((Int) -> Void)? = nil) {
-        guard (showKeyboard || chinese.isPending), SettingsWindow.shared.window?.isVisible != true else { hide(); return }
+        guard (showKeyboard || chinese.isPending), !SettingsWindow.shared.isFrontmost else { hide(); return }
         self.onChoose = onChoose
         let rows = (chinese.visibleCandidates.count + 2) / 3
         let base: CGFloat = showKeyboard ? 168 : 0

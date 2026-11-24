@@ -44,6 +44,9 @@ final class SettingsWindow: NSWindowController, NSWindowDelegate {
         }
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+    /// True only while the app window is the one being typed in; its testing ground
+    /// draws its own keyboard, so the floating panel stays hidden then and only then.
+    var isFrontmost: Bool { NSApp.isActive && window?.isKeyWindow == true }
     func open() {
         store.hasOpenedSetup = true
         NSApp.setActivationPolicy(.regular)
