@@ -69,6 +69,7 @@ gboolean key(IBusEngine *engine, guint keyval, guint keycode, guint flags) {
     const double time = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
     sv::Key event{usage, !(flags & IBUS_RELEASE_MASK), false, !!(flags & IBUS_SHIFT_MASK),
                   !!(flags & (IBUS_CONTROL_MASK | IBUS_MOD1_MASK | IBUS_SUPER_MASK | IBUS_META_MASK)), false, time};
+    event.text = static_cast<char32_t>(ibus_keyval_to_unicode(keyval));
     const bool handled = state->session->key(event); state->guide(); return handled;
 }
 void focusIn(IBusEngine *engine) {

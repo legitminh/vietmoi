@@ -24,6 +24,10 @@ class NativeEngine(output: Int, private val input: Int, mode: Int = 0) : AutoClo
     private external fun nativeState(handle: Long, input: Int): String
     companion object {
         init { System.loadLibrary("sieuviet_jni") }
+        /** Adaptive punctuation ("quá " + "!" → "quá! "), or null to type `typed` as usual. */
+        fun adaptivePunctuation(tail: String, typed: String): String? =
+            nativeAdaptivePunctuation(tail.toByteArray(Charsets.UTF_8), typed.toByteArray(Charsets.UTF_8))
+        @JvmStatic private external fun nativeAdaptivePunctuation(tail: ByteArray, typed: ByteArray): String?
         const val KEY = 0; const val COMPONENT = 1; const val BACKSPACE = 2; const val CANCEL = 3
         const val FINISH = 4; const val TOGGLE = 5; const val SPACE = 6; const val CLEAR = 7
         const val NONE = 0; const val MARKED = 1; const val COMMIT = 2; const val CANCELLED = 3; const val DELETE_CYCLE = 4

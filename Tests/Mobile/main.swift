@@ -313,6 +313,26 @@ import Foundation
         modeSettings.inputMode = .quocNgu; modeSettings.output = .sieuviet; modeSession.reloadSettings()
         type("zses", modeSession)
         expect(modeDoc.text.hasSuffix("za "), "Quốc ngữ gi translates to shared phonetic z for siêu việt output")
+        // Adaptive punctuation: a phrase mark after a completed block replaces its automatic space.
+        let punctuationDoc = TestMobileDocument()
+        var punctuationSettings = MobileKeyboardSettings(output: .quocNgu, suggestionsEnabled: false)
+        let punctuation = MobileInputSession(document: punctuationDoc, defaults: UserDefaults(suiteName: suite + ".punctuation")!,
+                                             settingsProvider: { punctuationSettings })
+        type("msed", punctuation); punctuation.literal("!")
+        expect(punctuationDoc.text == "má! ", "A mark after a block replaces its automatic space")
+        punctuation.literal("!")
+        expect(punctuationDoc.text == "má!! ", "Repeated marks stay attached")
+        punctuation.literal("a"); punctuation.literal(",")
+        expect(punctuationDoc.text == "má!! a,", "Other text ends adaptive punctuation")
+        punctuation.literal(" "); type("frej", punctuation); punctuation.literal("?")
+        expect(punctuationDoc.text == "má!! a, phở? ", "Any completed phonetic block arms it")
+        punctuation.moveCursor(by: -1); punctuation.moveCursor(by: 1); punctuation.literal(".")
+        expect(punctuationDoc.text == "má!! a, phở? .", "Moving the caret ends adaptive punctuation")
+        punctuationSettings.profiles[0].adaptivePunctuation = false; punctuation.reloadSettings()
+        punctuation.literal(" "); type("msed", punctuation); punctuation.literal(".")
+        expect(punctuationDoc.text.hasSuffix(" má ."), "The keyboard setting turns it off")
+        expect(LetterLayerPunctuation.mark(",", language: .chinese) == "，" && LetterLayerPunctuation.mark(".", language: .chinese) == "。"
+               && LetterLayerPunctuation.mark(",", language: .vietnamese) == ",", "Chinese letter-layer marks")
         let rows = ASCIIKeyboardLayout.guideRows
         expect(rows[0].first?.label == "q" && rows[1].first?.label == "a" && rows[2].first?.label == "Shift", "Mac and mobile share aligned columns")
         expect(rows[0].last?.label == "p" && rows[1].last?.label == ";", "Semicolon is below p")

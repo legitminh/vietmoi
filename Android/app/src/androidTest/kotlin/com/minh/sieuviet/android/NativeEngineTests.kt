@@ -46,6 +46,15 @@ class NativeEngineTests {
         assertEquals(0, KeyboardProfile.fromJson(KeyboardProfile("B", "English", "en", mode = 1).toJson()).mode)
     }
 
+    @Test fun adaptivePunctuationComesFromTheSharedCore() {
+        assertEquals("quá! ", NativeEngine.adaptivePunctuation("quá ", "!"))
+        assertEquals("quá!. ", NativeEngine.adaptivePunctuation("quá! ", "."))
+        assertNull(NativeEngine.adaptivePunctuation("quá ", "a"))
+        assertNull(NativeEngine.adaptivePunctuation("quá", ","))
+        assertFalse(KeyboardProfile.fromJson(KeyboardProfile("A", "Off", adaptive = false).toJson()).adaptive)
+        assertTrue(KeyboardProfile.fromJson(org.json.JSONObject().put("id", "B").put("name", "Old")).adaptive)
+    }
+
     @Test fun all79200ConstructionsRunNativelyOnAndroid() {
         var count = 0
         for (output in 0..1) NativeEngine(output, 0).use { engine ->

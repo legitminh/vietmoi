@@ -29,6 +29,12 @@ sv_engine_t sv_engine_create_with_input(int32_t output, int32_t input_mode);
 /* NULL is harmless; all other handles must be live values returned by create.
    Never reuse or double-destroy a handle. Calls on a handle must be serialized. */
 void sv_engine_destroy(sv_engine_t engine);
+/* Adaptive punctuation (Vietnamese). `tail` is the UTF-8 block the host committed just
+   before the caret, ending in its automatic space; `typed` is the UTF-8 text of the key.
+   For a phrase mark (, . ? ! ; : …) it copies the replacement for `tail` ("quá " + "!" →
+   "quá! ") and returns the bytes INCLUDING the trailing NUL, as the copy functions do;
+   it returns 0 when the key types as usual. The host deletes `tail` only after verifying it. */
+int64_t sv_adaptive_punctuation(const char *tail, const char *typed, char *buffer, uint64_t capacity);
 /* Returns an effect or negative sv_error. SV_KEY uses page-0x07 USB HID usages.
    SV_COMPONENT uses current inventory order. Other commands require argument=0.
    Errors preserve the previous state/effect. The host applies each effect once;

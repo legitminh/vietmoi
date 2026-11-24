@@ -73,6 +73,11 @@ final class InputSession {
     }
     private var engine = KeyboardEngine()
     private var history: [CommittedCycle] = []
+    /// The automatic Vietnamese block (or adaptive rewrite) just committed; see AdaptivePunctuation.
+    private var adaptiveTail: String?
+    private var adaptive: Bool {
+        currentProfile?.language == .vietnamese && !engine.ascii && currentProfile?.adaptivePunctuation != false
+    }
     private var keymap: ASCIIPlusKeymap { engine.inputMode == .sieuviet ? (currentProfile?.asciiPlusKeymap ?? .sieuviet) : engine.keymap }
     private var origin: NSRange?
     private var expectedSelection: NSRange?
@@ -165,6 +170,16 @@ final class InputSession {
         discardMovedComposition(client)
         let shiftHeld = event.modifierFlags.contains(.shift) || leftShiftDown || rightShiftDown ||
                         keyIsDown(56) || keyIsDown(60)
+        // Adaptive punctuation: any key ends the automatic block; a phrase mark that the
+        // keyboard would pass through to the app replaces its space ("quá " + "!" → "quá! ").
+        let tail = adaptiveTail
+        adaptiveTail = nil
+        if let tail = tail, shortcuts.isEmpty, !engine.isPending, let text = event.characters,
+           let rewrite = AdaptivePunctuation.rewrite(tail: tail, typing: text),
+           shiftHeld || !routesToEngine(event.keyCode), replaceAdaptiveTail(tail, with: rewrite, client: client) {
+            refresh(sender)
+            return true
+        }
         if [51, 117].contains(event.keyCode) && client.selectedRange().length > 0 &&
            !ownsCompositionSelection(client) && shortcuts.isEmpty {
             // An explicit selection belongs to the host, including forward Delete
@@ -345,10 +360,31 @@ final class InputSession {
         return false
     }
 
+    /// Whether a key types into the Vietnamese engine (otherwise it reaches the app).
+    private func routesToEngine(_ keyCode: UInt16) -> Bool {
+        if currentProfile?.inputType == .asciiPlus {
+            return ASCIIPlusMapping.inputKeyCodes(for: engine.phase, inventory: engine.inventory, keymap: keymap).contains(keyCode)
+        }
+        return GridKey.index(keyCode: keyCode) != nil
+    }
+    /// Replace the verified block before the caret with its adaptive rewrite.
+    private func replaceAdaptiveTail(_ tail: String, with text: String, client: IMKTextInput) -> Bool {
+        let selection = client.selectedRange(), length = tail.utf16.count
+        guard selection.location != NSNotFound, selection.length == 0, selection.location >= length else { return false }
+        let range = NSRange(location: selection.location - length, length: length)
+        guard client.attributedSubstring(from: range)?.string == tail else { return false }
+        client.insertText(text, replacementRange: range)
+        history.removeAll()
+        adaptiveTail = text
+        return true
+    }
+
     private func finishWithSpace(_ sender: Any!) -> Bool {
         guard engine.isPending else { return false }
         let hasText = !engine.preview.isEmpty
         apply(engine.finishPartial(suffix: " "), sender: sender)
+        // A typed space is the writer's own: only a completed block's automatic space adapts.
+        adaptiveTail = nil
         refresh(sender)
         // Empty optional initials leave ordinary Space/selection behavior to the host.
         return hasText
@@ -416,6 +452,7 @@ final class InputSession {
             word = (syllable + word).precomposedStringWithCanonicalMapping
         }
         commit(word, client: client)
+        adaptiveTail = adaptive ? word : nil
         refresh(client)
         return true
     }
@@ -647,7 +684,7 @@ final class InputSession {
                 // mistaking the later acknowledgement for a user selection move.
                 expectedSelection = origin.map { NSRange(location: $0.location + visible.utf16.count, length: 0) }
             }
-        case .commit(let text): commit(text, client: client)
+        case .commit(let text): commit(text, client: client); adaptiveTail = adaptive ? text : nil
         case .cancel:
             if marked && !compositionMoved(client) {
                 client.insertText(originalSelection, replacementRange: unspecified)

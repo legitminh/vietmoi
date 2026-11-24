@@ -668,5 +668,25 @@
     "vi": "kiểu gõ cho {name}",
     "en": "input for {name}",
     "zh": "{name} 的输入方式"
+  },
+  "adaptivePunctuation": {
+    "vi": "dấu câu thích ứng",
+    "en": "adaptive punctuation",
+    "zh": "自适应标点"
+  },
+  "adaptivePunctuationOn": {
+    "vi": "dấu câu thích ứng: bật",
+    "en": "adaptive punctuation: on",
+    "zh": "自适应标点：开"
+  },
+  "adaptivePunctuationOff": {
+    "vi": "dấu câu thích ứng: tắt",
+    "en": "adaptive punctuation: off",
+    "zh": "自适应标点：关"
+  },
+  "adaptivePunctuationHelp": {
+    "vi": "sau một khối tiếng việt, , . ? ! ; : thay khoảng trắng tự động rồi thêm một khoảng trắng: \"mệt quá \" + \"!\" → \"mệt quá! \".",
+    "en": "after a vietnamese block, , . ? ! ; : replace its automatic space and then add one: \"mệt quá \" + \"!\" → \"mệt quá! \".",
+    "zh": "在越南语音节块之后，, . ? ! ; : 会替换自动空格并在后面加一个空格：\"mệt quá \" + \"!\" → \"mệt quá! \"。"
   }
 }

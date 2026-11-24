@@ -145,6 +145,10 @@ object AppCopy {
         "exit" to "thoát",
         "inputModeLabel" to "kiểu gõ",
         "inputModeProfile" to "kiểu gõ cho {name}",
+        "adaptivePunctuation" to "dấu câu thích ứng",
+        "adaptivePunctuationOn" to "dấu câu thích ứng: bật",
+        "adaptivePunctuationOff" to "dấu câu thích ứng: tắt",
+        "adaptivePunctuationHelp" to "sau một khối tiếng việt, , . ? ! ; : thay khoảng trắng tự động rồi thêm một khoảng trắng: \"mệt quá \" + \"!\" → \"mệt quá! \".",
     )
     private val english = mapOf<String, String>(
         "tagline" to "vietnamese, one choice at a time.",
@@ -281,6 +285,10 @@ object AppCopy {
         "exit" to "exit",
         "inputModeLabel" to "input",
         "inputModeProfile" to "input for {name}",
+        "adaptivePunctuation" to "adaptive punctuation",
+        "adaptivePunctuationOn" to "adaptive punctuation: on",
+        "adaptivePunctuationOff" to "adaptive punctuation: off",
+        "adaptivePunctuationHelp" to "after a vietnamese block, , . ? ! ; : replace its automatic space and then add one: \"mệt quá \" + \"!\" → \"mệt quá! \".",
     )
     private val chinese = mapOf<String, String>(
         "tagline" to "越南语，一次一个选择。",
@@ -417,5 +425,9 @@ object AppCopy {
         "exit" to "退出",
         "inputModeLabel" to "输入方式",
         "inputModeProfile" to "{name} 的输入方式",
+        "adaptivePunctuation" to "自适应标点",
+        "adaptivePunctuationOn" to "自适应标点：开",
+        "adaptivePunctuationOff" to "自适应标点：关",
+        "adaptivePunctuationHelp" to "在越南语音节块之后，, . ? ! ; : 会替换自动空格并在后面加一个空格：\"mệt quá \" + \"!\" → \"mệt quá! \"。",
     )
 }

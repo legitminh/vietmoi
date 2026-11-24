@@ -6,8 +6,8 @@
 // has a language with its own inputs and outputs, and a left Shift tap moves to
 // the next keyboard. Every change is saved at once.
 namespace {
-enum Control { List = 10, AddVietnamese, AddEnglish, Select, Remove, Language = 20, Input, Output, Interface, Mode };
-HWND list, languageBox, inputBox, modeBox, outputBox, interfaceBox, message;
+enum Control { List = 10, AddVietnamese, AddEnglish, Select, Remove, Language = 20, Input, Output, Interface, Mode, Adaptive };
+HWND list, languageBox, inputBox, modeBox, outputBox, adaptiveBox, interfaceBox, message;
 sv::Settings settings;
 std::vector<std::pair<HWND,std::string>> labels;
 std::vector<std::pair<HWND,std::string>> buttons;
@@ -55,6 +55,9 @@ void fill(int selection) {
     else { combo(inputBox,{L"ASCII+",L"grid4x8"},keyboard.input); combo(modeBox,{L"siêu việt",L"quốc ngữ"},keyboard.mode);
            combo(outputBox,{L"siêu việt",L"quốc ngữ"},keyboard.output); }
     EnableWindow(inputBox,!keyboard.literal()); EnableWindow(modeBox,!keyboard.literal()); EnableWindow(outputBox,!keyboard.literal());
+    SetWindowTextW(adaptiveBox,text("adaptivePunctuation").c_str());
+    SendMessageW(adaptiveBox,BM_SETCHECK,!keyboard.literal() && keyboard.adaptive ? BST_CHECKED : BST_UNCHECKED,0);
+    EnableWindow(adaptiveBox,!keyboard.literal());
     combo(interfaceBox,{L"Tiếng Việt",L"English",L"中文"},settings.language == "en" ? 1 : settings.language == "zh" ? 2 : 0);
     SetWindowTextW(message,text("settingsHelp").c_str());
     filling = false;
@@ -105,11 +108,12 @@ LRESULT CALLBACK procedure(HWND window, UINT event, WPARAM w, LPARAM l) {
         label("inputLabel",310);inputBox=control(window,L"COMBOBOX",WS_TABSTOP|CBS_DROPDOWNLIST,20,332,510,180,Input);
         label("inputModeLabel",370);modeBox=control(window,L"COMBOBOX",WS_TABSTOP|CBS_DROPDOWNLIST,20,392,510,180,Mode);
         label("outputLabel",430);outputBox=control(window,L"COMBOBOX",WS_TABSTOP|CBS_DROPDOWNLIST,20,452,510,180,Output);
-        label("language",490);interfaceBox=control(window,L"COMBOBOX",WS_TABSTOP|CBS_DROPDOWNLIST,20,512,510,180,Interface);
-        message=control(window,L"STATIC",0,20,552,510,60);
-        label("windowsPracticeHelp",620,38);
-        CreateWindowExW(WS_EX_CLIENTEDGE,L"EDIT",L"",WS_CHILD|WS_VISIBLE|WS_TABSTOP|ES_MULTILINE|ES_AUTOVSCROLL|WS_VSCROLL,20,660,510,100,window,nullptr,nullptr,nullptr);
-        label("shiftLimitHelp",770,40);
+        adaptiveBox=control(window,L"BUTTON",WS_TABSTOP|BS_AUTOCHECKBOX,20,488,510,26,Adaptive);
+        label("language",524);interfaceBox=control(window,L"COMBOBOX",WS_TABSTOP|CBS_DROPDOWNLIST,20,546,510,180,Interface);
+        message=control(window,L"STATIC",0,20,586,510,60);
+        label("windowsPracticeHelp",654,38);
+        CreateWindowExW(WS_EX_CLIENTEDGE,L"EDIT",L"",WS_CHILD|WS_VISIBLE|WS_TABSTOP|ES_MULTILINE|ES_AUTOVSCROLL|WS_VSCROLL,20,694,510,100,window,nullptr,nullptr,nullptr);
+        label("shiftLimitHelp",804,40);
         font=CreateFontW(-15,0,0,0,FW_NORMAL,FALSE,FALSE,FALSE,DEFAULT_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,DEFAULT_QUALITY,FIXED_PITCH,L"Consolas");
         EnumChildWindows(window,[](HWND child,LPARAM)->BOOL { SendMessageW(child,WM_SETFONT,reinterpret_cast<WPARAM>(font),TRUE);return TRUE; },0);
         int active = 0;
@@ -125,6 +129,9 @@ LRESULT CALLBACK procedure(HWND window, UINT event, WPARAM w, LPARAM l) {
         if (id==AddVietnamese) { add("vi"); return 0; }
         if (id==AddEnglish) { add("en"); return 0; }
         if (id==Select) { settings.active=keyboard.id; save(); fill(selected()); return 0; }
+        if (id==Adaptive && code==BN_CLICKED) {
+            keyboard.adaptive = SendMessageW(adaptiveBox,BM_GETCHECK,0,0) == BST_CHECKED; save(); fill(selected()); return 0;
+        }
         if (id==Remove) {
             if (settings.keyboards.size() <= 1) { SetWindowTextW(message,text("keepKeyboard").c_str()); return 0; }
             const int index=selected(); const bool active = keyboard.id == settings.active;
@@ -150,7 +157,7 @@ int WINAPI wWinMain(HINSTANCE instance,HINSTANCE,PWSTR,int) {
     CoInitializeEx(nullptr,COINIT_APARTMENTTHREADED);
     WNDCLASSW klass{};klass.lpfnWndProc=procedure;klass.hInstance=instance;klass.lpszClassName=L"SieuvietSettings";
     klass.hCursor=LoadCursorW(nullptr,IDC_ARROW);klass.hbrBackground=reinterpret_cast<HBRUSH>(COLOR_WINDOW+1);RegisterClassW(&klass);
-    auto window=CreateWindowW(klass.lpszClassName,L"siêu việt",WS_OVERLAPPEDWINDOW,CW_USEDEFAULT,CW_USEDEFAULT,570,860,nullptr,nullptr,instance,nullptr);
+    auto window=CreateWindowW(klass.lpszClassName,L"siêu việt",WS_OVERLAPPEDWINDOW,CW_USEDEFAULT,CW_USEDEFAULT,570,900,nullptr,nullptr,instance,nullptr);
     if (!window) return 1;
     ShowWindow(window,SW_SHOW);MSG event;
     while (GetMessageW(&event,nullptr,0,0)>0) { if (!IsDialogMessageW(window,&event)) { TranslateMessage(&event);DispatchMessageW(&event); } }

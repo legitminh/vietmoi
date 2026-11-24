@@ -27,6 +27,13 @@ private func copy(_ text: String, to buffer: UnsafeMutablePointer<CChar>?, capac
     return Unmanaged.passRetained(SieuvietEngine(output: output, input: input)).toOpaque()
 }
 
+@c @implementation public func sv_adaptive_punctuation(_ tail: UnsafePointer<CChar>?, _ typed: UnsafePointer<CChar>?,
+                                                       _ buffer: UnsafeMutablePointer<CChar>?, _ capacity: UInt64) -> Int64 {
+    guard let tail = tail, let typed = typed,
+          let rewrite = SieuvietEngine.adaptivePunctuation(tail: String(cString: tail), typing: String(cString: typed)) else { return 0 }
+    return copy(rewrite, to: buffer, capacity: capacity)
+}
+
 @c @implementation public func sv_engine_destroy(_ engine: UnsafeMutableRawPointer?) {
     if let engine = engine { Unmanaged<SieuvietEngine>.fromOpaque(engine).release() }
 }

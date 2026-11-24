@@ -29,6 +29,21 @@ extern "C" JNIEXPORT jlong JNICALL Java_com_minh_sieuviet_android_NativeEngine_n
     if (!handle) fail(env, "Invalid output configuration");
     return static_cast<jlong>(reinterpret_cast<uintptr_t>(handle));
 }
+// Adaptive punctuation: the replacement for `tail` when `typed` is a phrase mark, else null.
+extern "C" JNIEXPORT jstring JNICALL Java_com_minh_sieuviet_android_NativeEngine_nativeAdaptivePunctuation(
+        JNIEnv *env, jclass, jbyteArray tail, jbyteArray typed) {
+    auto bytes = [env](jbyteArray array) {
+        std::vector<char> result(static_cast<size_t>(env->GetArrayLength(array)) + 1, '\0');
+        env->GetByteArrayRegion(array, 0, env->GetArrayLength(array), reinterpret_cast<jbyte *>(result.data()));
+        return result;
+    };
+    const auto before = bytes(tail), text = bytes(typed);
+    const int64_t count = sv_adaptive_punctuation(before.data(), text.data(), nullptr, 0);
+    if (count <= 1 || count > 65536) return nullptr;
+    std::vector<char> data(static_cast<size_t>(count));
+    if (sv_adaptive_punctuation(before.data(), text.data(), data.data(), data.size()) != count) return nullptr;
+    return string(env, data, count);
+}
 extern "C" JNIEXPORT void JNICALL Java_com_minh_sieuviet_android_NativeEngine_nativeDestroy(JNIEnv *, jobject, jlong handle) { sv_engine_destroy(engine(handle)); }
 extern "C" JNIEXPORT jint JNICALL Java_com_minh_sieuviet_android_NativeEngine_nativeDispatch(JNIEnv *, jobject, jlong handle, jint command, jint argument) {
     return sv_engine_dispatch(engine(handle), command, argument);

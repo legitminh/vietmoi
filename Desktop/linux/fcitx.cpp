@@ -76,6 +76,7 @@ public:
         sv::Key input{usage, !event.isRelease(), false, modifiers.test(fcitx::KeyState::Shift),
                       modifiers.test(fcitx::KeyState::Ctrl) || modifiers.test(fcitx::KeyState::Alt) || modifiers.test(fcitx::KeyState::Super), false,
                       std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count()};
+        input.text = static_cast<char32_t>(fcitx::Key::keySymToUnicode(event.key().sym()));
         if (state->session->key(input)) event.filterAndAccept();
         state->guide();
     }

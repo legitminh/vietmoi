@@ -24,6 +24,9 @@ class EditorSession(private val connection: InputConnection, val profile: Keyboa
     var observedEnd = end; private set
     private var editing = false
     private var recentCommit: String? = null
+    /** The automatic Vietnamese block (or adaptive rewrite) before the caret; see AdaptivePunctuation. */
+    private var tail: String? = null
+    private val adaptive = !profile.literal && !ascii && profile.adaptive
     private var closed = false
 
     init { if (ascii) engine.dispatch(NativeEngine.TOGGLE) }
@@ -39,6 +42,7 @@ class EditorSession(private val connection: InputConnection, val profile: Keyboa
         }
         val effect = engine.dispatch(command, argument)
         if (effect.kind < 0) return false
+        tail = null
         editing = true
         connection.beginBatchEdit()
         try {
@@ -57,6 +61,8 @@ class EditorSession(private val connection: InputConnection, val profile: Keyboa
                         expected = if (marked || before.getBoolean("pending")) origin + effect.text.length
                                    else if (observedStart >= 0) min(observedStart, observedEnd) + effect.text.length else -1
                         recentCommit = effect.text
+                        // A typed space is the writer's own: only a completed block's automatic space adapts.
+                        if (adaptive && command != NativeEngine.SPACE) tail = effect.text
                     } else recentCommit = null
                     resetMark()
                 }
@@ -87,7 +93,7 @@ class EditorSession(private val connection: InputConnection, val profile: Keyboa
 
     fun backspace() {
         if (state.getBoolean("pending")) { command(NativeEngine.BACKSPACE); return }
-        recentCommit = null
+        recentCommit = null; tail = null
         if (!connection.getSelectedText(0).isNullOrEmpty()) connection.commitText("", 1)
         else {
             val before = connection.getTextBeforeCursor(128, 0)?.toString()
@@ -108,10 +114,28 @@ class EditorSession(private val connection: InputConnection, val profile: Keyboa
 
     fun literal(text: String) {
         finish()
+        if (punctuate(text)) return
         recentCommit = null
         connection.commitText(text, 1)
         expected = -1
         onChange?.invoke()
+    }
+
+    /** Adaptive punctuation: "mệt quá " + "!" → "mệt quá! ", only over verified text of our own.
+     *  Any other key ends the automatic block; returns whether `text` was typed. */
+    fun punctuate(text: String): Boolean {
+        val previous = tail ?: return false
+        tail = null
+        val rewrite = NativeEngine.adaptivePunctuation(previous, text) ?: return false
+        if (state.getBoolean("pending") || !connection.getSelectedText(0).isNullOrEmpty() ||
+            connection.getTextBeforeCursor(previous.length, 0)?.toString() != previous) return false
+        editing = true
+        connection.beginBatchEdit()
+        try { connection.deleteSurroundingText(previous.length, 0); connection.commitText(rewrite, 1) }
+        finally { connection.endBatchEdit(); editing = false }
+        recentCommit = null; tail = rewrite; expected = -1
+        onChange?.invoke()
+        return true
     }
 
     fun finish() {
@@ -125,7 +149,7 @@ class EditorSession(private val connection: InputConnection, val profile: Keyboa
     }
 
     fun enter() {
-        finish(); recentCommit = null
+        finish(); recentCommit = null; tail = null
         val action = info.imeOptions and EditorInfo.IME_MASK_ACTION
         if (action != EditorInfo.IME_ACTION_NONE && action != EditorInfo.IME_ACTION_UNSPECIFIED &&
             info.imeOptions and EditorInfo.IME_FLAG_NO_ENTER_ACTION == 0) connection.performEditorAction(action)
@@ -146,7 +170,7 @@ class EditorSession(private val connection: InputConnection, val profile: Keyboa
                 engine.dispatch(NativeEngine.CANCEL)
                 resetMark()
             }
-            recentCommit = null
+            recentCommit = null; tail = null
         }
         observedStart = start; observedEnd = end
         onChange?.invoke()
@@ -155,6 +179,6 @@ class EditorSession(private val connection: InputConnection, val profile: Keyboa
     private fun ownedMark(): Boolean = connection.getSelectedText(0).isNullOrEmpty() &&
         connection.getTextBeforeCursor(markText.length, 0)?.toString() == markText
     private fun resetMark() { marked = false; markText = ""; originalSelection = "" }
-    private fun abandon() { engine.dispatch(NativeEngine.CANCEL); resetMark(); recentCommit = null }
+    private fun abandon() { engine.dispatch(NativeEngine.CANCEL); resetMark(); recentCommit = null; tail = null }
     override fun close() { if (!closed) { closed = true; onChange = null; engine.close() } }
 }
