@@ -1,37 +1,37 @@
 {
   "installWindowsMissingAdapter": {
-    "vi": "Không tìm thấy SieuvietTSF.dll trong gói cài đặt.",
+    "vi": "không tìm thấy SieuvietTSF.dll trong gói cài đặt.",
     "en": "SieuvietTSF.dll is missing from the installation package.",
     "zh": "安装包中缺少 SieuvietTSF.dll。"
   },
   "installWindowsMissingEngine": {
-    "vi": "Cần có SieuvietEngine.dll trước khi đăng ký bộ gõ.",
+    "vi": "cần có SieuvietEngine.dll trước khi đăng ký bộ gõ.",
     "en": "SieuvietEngine.dll is required before registration.",
     "zh": "注册前需要 SieuvietEngine.dll。"
   },
   "installWindowsMissingSmoke": {
-    "vi": "Không tìm thấy desktop-session-tests.exe để kiểm tra bộ gõ.",
+    "vi": "không tìm thấy desktop-session-tests.exe để kiểm tra bộ gõ.",
     "en": "desktop-session-tests.exe is missing; the engine cannot be checked.",
     "zh": "缺少 desktop-session-tests.exe，无法检查引擎。"
   },
   "installWindowsSmokeFailed": {
-    "vi": "Kiểm tra bộ gõ không đạt; đã bỏ qua bước đăng ký.",
-    "en": "The shared-engine smoke test failed; registration was skipped.",
+    "vi": "kiểm tra bộ gõ không đạt; đã bỏ qua bước đăng ký.",
+    "en": "the shared-engine smoke test failed; registration was skipped.",
     "zh": "共享引擎冒烟测试失败，已跳过注册。"
   },
   "installWindowsRegistrationFailed": {
-    "vi": "Đăng ký TSF không thành công. Kiểm tra quyền quản trị và kiến trúc của PowerShell cùng gói cài đặt.",
-    "en": "TSF registration failed. Check administrator access and matching PowerShell/package architectures.",
-    "zh": "TSF 注册失败。请检查管理员权限，以及 PowerShell 与安装包的架构是否一致。"
+    "vi": "đăng ký tsf không thành công. kiểm tra quyền quản trị và kiến trúc của powershell cùng gói cài đặt.",
+    "en": "tsf registration failed. check administrator access and matching PowerShell/package architectures.",
+    "zh": "tsf 注册失败。请检查管理员权限，以及 powershell 与安装包的架构是否一致。"
   },
   "installWindowsRegistered": {
-    "vi": "Đã đăng ký. Chọn siêu việt bằng Win+Space. Mở SieuvietSettings.exe để cài đặt và gõ thử. Dùng -Language en để xem hướng dẫn cài bằng tiếng Anh.",
-    "en": "Registered. Select siêu việt with Win+Space. Open SieuvietSettings.exe for settings and practice. Use -Language vi for Vietnamese installation messages.",
-    "zh": "已注册。按 Win+Space 选择 siêu việt。打开 SieuvietSettings.exe 进行设置和练习。使用 -Language vi 显示越南语安装信息。"
+    "vi": "đã đăng ký. chọn siêu việt bằng win+space. mở SieuvietSettings.exe để cài đặt và gõ thử. dùng -Language en để xem hướng dẫn cài bằng tiếng anh.",
+    "en": "registered. select siêu việt with win+space. open SieuvietSettings.exe for settings and practice. use -Language vi for vietnamese installation messages.",
+    "zh": "已注册。按 win+space 选择 siêu việt。打开 SieuvietSettings.exe 进行设置和练习。使用 -Language vi 显示越南语安装信息。"
   },
   "installWindowsRemoved": {
-    "vi": "Đã gỡ đăng ký siêu việt. Cài đặt cá nhân vẫn được giữ.",
-    "en": "siêu việt registration was removed. Personal settings were preserved.",
+    "vi": "đã gỡ đăng ký siêu việt. cài đặt cá nhân vẫn được giữ.",
+    "en": "siêu việt registration was removed. personal settings were preserved.",
     "zh": "已移除 siêu việt 注册。个人设置已保留。"
   }
 }
