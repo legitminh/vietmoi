@@ -89,7 +89,8 @@ def save(state):
 
 
 types = {'.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json',
-         '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2'}
+         '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2',
+         '.wasm': 'application/wasm', '.txt': 'text/plain; charset=utf-8'}
 
 
 def serve(request):

@@ -1,4 +1,6 @@
+#if !hasFeature(Embedded)
 import Foundation
+#endif
 
 // Quốc ngữ is a renderer of a completed phonetic basis. It never parses the
 // displayed preview or changes the user's chosen atoms. Rules follow the notes

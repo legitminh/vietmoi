@@ -1,4 +1,6 @@
+#if !hasFeature(Embedded)
 import Foundation
+#endif
 
 // Uses event timestamps, with no delayed key dispatch or timer. A chord invalidates
 // the tap even if Shift is released before the other key, or another key was held first.

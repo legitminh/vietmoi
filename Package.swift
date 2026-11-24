@@ -13,7 +13,7 @@ let package = Package(
                 exclude: ["KeyboardPreferences.swift", "KeyboardProfiles.swift"],
                 sources: ["AppCopy.swift", "AppDesign.swift", "ASCIIKeyboardLayout.swift", "ASCIIPlusMapping.swift",
                           "KeyboardProfile.swift", "KeyboardEngine.swift", "PhoneticBasis.swift",
-                          "StandardVietnamese.swift", "SieuvietEngine.swift", "ShiftTapDetector.swift"]),
+                          "PredictionEngine.swift", "StandardVietnamese.swift", "SieuvietEngine.swift", "ShiftTapDetector.swift"]),
         .target(name: "SieuvietCABI", path: "Sources/CABI", publicHeadersPath: "include"),
         .target(name: "SieuvietBridge", dependencies: ["SieuvietCore", "SieuvietCABI"],
                 path: "Sources/Bridge"),

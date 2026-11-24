@@ -1,0 +1,1 @@
+../../../../Sources/Core/ShiftTapDetector.swift

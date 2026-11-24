@@ -643,5 +643,15 @@
     "vi": "quay lại",
     "en": "back",
     "zh": "返回"
+  },
+  "loadingDictionary": {
+    "vi": "đang tải từ điển…",
+    "en": "loading the dictionary…",
+    "zh": "正在加载词典…"
+  },
+  "coreFailed": {
+    "vi": "không tải được bộ gõ. hãy tải lại trang.",
+    "en": "the keyboard engine could not load. reload the page.",
+    "zh": "无法加载输入引擎。请重新加载页面。"
   }
 }

@@ -1,7 +1,9 @@
+#if !hasFeature(Embedded)
 import Foundation
+#endif
 
 // Each round binds physical positions to typed atoms, independent of inventory order.
-struct ASCIIPlusKeymap: Codable, Equatable {
+struct ASCIIPlusKeymap: Equatable {
     var initials: [String: String]
     var vowels: [String: VietnameseVowelAtom]
     var tones: [String: VietnameseTone]
@@ -67,6 +69,11 @@ struct ASCIIPlusKeymap: Codable, Equatable {
          tones: [String: VietnameseTone], finals: [String: String]) {
         self.initials = initials; self.vowels = vowels; self.tones = tones; self.finals = finals
     }
+}
+
+// Saved keymaps and their schema migrations. Embedded (WebAssembly) builds have no Codable.
+#if !hasFeature(Embedded)
+extension ASCIIPlusKeymap: Codable {
     private enum CodingKeys: String, CodingKey { case version, initials, vowels, tones, finals }
     init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
@@ -147,6 +154,7 @@ struct ASCIIPlusKeymap: Codable, Equatable {
         try values.encode(finals, forKey: .finals)
     }
 }
+#endif
 
 enum ASCIIPlusMapping {
     // US physical-position aliases, independent of a platform's numeric key codes.
@@ -157,7 +165,7 @@ enum ASCIIPlusMapping {
         case .onglideCoreVowel:
             let atoms = inventory.vowelAtoms
             return keymap.vowels.compactMapValues { atoms.firstIndex(of: $0) }
-        case .tone: return keymap.tones.mapValues(\.rawValue)
+        case .tone: return keymap.tones.mapValues({ $0.rawValue })
         case .final: return keymap.finals.compactMapValues { inventory.finals.firstIndex(of: $0) }
         }
     }

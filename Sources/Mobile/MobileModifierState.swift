@@ -1,4 +1,6 @@
+#if !hasFeature(Embedded)
 import Foundation
+#endif
 
 // Touch modifiers use event times so their hold/double-tap behavior can be
 // checked without UIKit or real-time sleeps. Only input mode is persisted.

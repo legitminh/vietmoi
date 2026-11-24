@@ -1,12 +1,17 @@
+#if !hasFeature(Embedded)
 import Foundation
+#endif
 
 // The phonetic basis is independent of physical keys and display orthography.
 // Empty optional atoms are "", never literal spaces. Completed cycles and explicit Space boundaries add a space.
-struct VietnameseVowelAtom: Codable, Equatable, Hashable {
+struct VietnameseVowelAtom: Equatable, Hashable {
     var onglide: String
     var coreVowel: String
     var label: String { onglide + coreVowel }
 }
+#if !hasFeature(Embedded)
+extension VietnameseVowelAtom: Codable {}
+#endif
 
 struct VietnamesePhoneticInventory: Equatable {
     var inputMode: InputMode = .sieuviet
@@ -65,14 +70,17 @@ struct VietnamesePhoneticInventory: Equatable {
     }
 }
 
-enum VietnameseTone: Int, Codable, CaseIterable {
+enum VietnameseTone: Int, CaseIterable {
     case ngang, sac, huyen, hoi, nga, nang
     var preview: String { ["", "´", "ˋ", "?", "˜", "."][rawValue] }
     var label: String { ["∅", "´", "`", "̉", "~", "."][rawValue] }
     var name: String { ["ngang", "sắc", "huyền", "hỏi", "ngã", "nặng"][rawValue] }
 }
+#if !hasFeature(Embedded)
+extension VietnameseTone: Codable {}
+#endif
 
-struct VietnamesePhoneticBasis: Codable, Equatable {
+struct VietnamesePhoneticBasis: Equatable {
     var initial: String
     var onglide: String
     var coreVowel: String
@@ -80,12 +88,6 @@ struct VietnamesePhoneticBasis: Codable, Equatable {
     var final: String
     var vowelSpelling: String? = nil
 
-    // A stable, serializable viet.phonetic.basis schema, without parsing displayed text.
-    private enum CodingKeys: String, CodingKey {
-        case initial = "vietnamese_initial", onglide = "vietnamese_onglide"
-        case coreVowel = "vietnamese_core_vowel", tone = "vietnamese_tone", final = "vietnamese_final"
-        case vowelSpelling = "vowel_spelling"
-    }
     func sieuviet(inventory: VietnamesePhoneticInventory = .sieuviet) -> String {
         var letters = Array(coreVowel)
         let anchor = inventory.toneAnchors[coreVowel] ?? 0
@@ -97,6 +99,16 @@ struct VietnamesePhoneticBasis: Codable, Equatable {
     // Called only once a tone choice completes all four construction rounds.
     func standard() -> String { StandardVietnamese.render(self) }
 }
+#if !hasFeature(Embedded)
+extension VietnamesePhoneticBasis: Codable {
+    // A stable, serializable viet.phonetic.basis schema, without parsing displayed text.
+    private enum CodingKeys: String, CodingKey {
+        case initial = "vietnamese_initial", onglide = "vietnamese_onglide"
+        case coreVowel = "vietnamese_core_vowel", tone = "vietnamese_tone", final = "vietnamese_final"
+        case vowelSpelling = "vowel_spelling"
+    }
+}
+#endif
 
 enum VietnameseToneMarks {
     private static let forms: [Character: [Character]] = [
