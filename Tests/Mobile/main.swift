@@ -366,6 +366,13 @@ import Foundation
                && upgraded.profiles[0].inputMode == .quocNgu, "All three completion toggles and the input mode migrate")
         let pendingDoc = TestMobileDocument()
         var responses: [([String]) -> Void] = []
+        let onsetDoc = TestMobileDocument()
+        let onset = MobileInputSession(document: onsetDoc, defaults: UserDefaults(suiteName: suite + ".onset")!)
+        type("xs", onset); onset.space()
+        let typed = onsetDoc.text
+        type("o", onset)
+        onset.backspace()
+        expect(onsetDoc.text == String(typed.dropLast()), "Backspace on an invisible onset deletes the character before it")
         // Vietnamese ranks its small table inline; English waits on the word list in the background.
         let vietnameseDoc = TestMobileDocument()
         let inline = MobileInputSession(document: vietnameseDoc, defaults: UserDefaults(suiteName: suite + ".inline")!,

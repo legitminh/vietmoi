@@ -97,6 +97,12 @@ key('-'); key('-');
 expect(value.endsWith('-'), true, 'minus twice types one minus');
 value = saved; mark = 0;
 key('Escape');
+// An empty onset ("o") shows nothing, so Backspace deletes as usual instead.
+type('o');
+expect(value, saved, 'an empty onset shows nothing');
+key('Backspace');
+expect([value, state().pending], [saved.slice(0, -1), false], 'Backspace on an invisible onset deletes the character before it');
+value = saved; mark = 0;
 shiftTap(10);
 expect(state().language, 'en', 'a left Shift tap moves to the next keyboard');
 type('hi');

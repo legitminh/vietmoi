@@ -220,7 +220,11 @@ extension MobileTextDocument {
     func backspace() {
         edit {
             if keyboardLanguage == .chinese, chinese.isPending { apply(chinese.backspace()); return }
-            if engine.isPending {
+            if engine.isPending, engine.preview.isEmpty, originalSelection.isEmpty {
+                // An empty onset ("o") shows nothing: Backspace drops it and deletes as usual.
+                apply(engine.cancel()); componentCases.removeAll()
+                document.deleteBackward(); expected = Position(document)
+            } else if engine.isPending {
                 if !componentCases.isEmpty { componentCases.removeLast() }
                 apply(engine.backspace())
             }
