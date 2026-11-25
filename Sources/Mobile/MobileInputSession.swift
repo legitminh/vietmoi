@@ -62,6 +62,8 @@ extension MobileTextDocument {
     private var predictionKey: String?
     private var chinesePredictionKey: String?
     private var cachedSuggestions: [String] = []
+    /// The English word the cached suggestions complete; see scheduleSuggestions.
+    private var englishPrefix = ""
     private let submitCompletion: CompletionSubmit
     private let englishWords: (String) -> [String]
     private var recentCommit: String?
@@ -300,7 +302,7 @@ extension MobileTextDocument {
     }
     private func invalidateSuggestions() {
         predictionRequest?.cancel(); chineseRequest?.cancel()
-        predictionKey = nil; chinesePredictionKey = nil; cachedSuggestions = []
+        predictionKey = nil; chinesePredictionKey = nil; cachedSuggestions = []; englishPrefix = ""
     }
     private func scheduleSuggestions() {
         guard !movingCursor else { return }
@@ -323,11 +325,25 @@ extension MobileTextDocument {
         let language = keyboardLanguage
         let key = "\(language):\(context):\(prefix)"
         guard key != predictionKey else { return }
-        predictionRequest?.cancel(); predictionKey = key; cachedSuggestions = []
+        predictionRequest?.cancel(); predictionKey = key
+        if language != .english {
+            // The Vietnamese model is a small in-memory table: rank it now, so suggestions
+            // never blink empty between keys or wait for idle time.
+            cachedSuggestions = VietnamesePredictionEngine.suggestions(context: context, prefix: prefix, limit: 16).map({ $0.suffix })
+            return
+        }
+        // Until the word list answers, the last suggestions that still fit the longer word stay up.
+        let word = EnglishCompletion.prefix(of: context)
+        if word.count > englishPrefix.count, !englishPrefix.isEmpty, word.hasPrefix(englishPrefix) {
+            let typed = String(word.dropFirst(englishPrefix.count))
+            cachedSuggestions = cachedSuggestions.filter({ $0.count > typed.count && $0.hasPrefix(typed) }).map({ String($0.dropFirst(typed.count)) })
+        } else {
+            cachedSuggestions = []
+        }
+        englishPrefix = word
         let complete = englishWords
         predictionRequest = submitCompletion({
-            language == .english ? EnglishCompletion.suffixes(context: context, complete: complete)
-                : VietnamesePredictionEngine.suggestions(context: context, prefix: prefix, limit: 16).map({ $0.suffix })
+            EnglishCompletion.suffixes(context: context, complete: complete)
         }, whenAlive { (self: MobileInputSession, values: [String]) in
             guard self.predictionKey == key else { return }
             self.cachedSuggestions = values

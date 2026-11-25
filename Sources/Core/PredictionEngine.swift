@@ -72,6 +72,22 @@ enum VietnamesePredictionEngine {
         Entry(text: "gửi", weight: 1260), Entry(text: "nhận", weight: 1240)
     ]
 
+    /// Each phrase normalized and split once, so ranking runs on every key without
+    /// re-normalizing the table (the Mac ranks it inline while drawing the guide).
+    private struct Prepared {
+        let tails: [String]
+        let loweredTails: [String]
+        let loweredWords: [String]
+        let weight: Int
+    }
+    private static let prepared: [Prepared] = entries.compactMap { entry in
+        let words = entry.text.precomposedStringWithCanonicalMapping.split(separator: " ").map(String.init)
+        guard !words.isEmpty else { return nil }
+        let tails = words.indices.map { words[$0...].joined(separator: " ") }
+        return Prepared(tails: tails, loweredTails: tails.map { $0.lowercased() },
+                        loweredWords: words.map { $0.lowercased() }, weight: entry.weight)
+    }
+
     static func suggestions(context: String, prefix: String, limit: Int = 12) -> [PredictionCandidate] {
         guard limit > 0 else { return [] }
         let normalizedPrefix = prefix.precomposedStringWithCanonicalMapping.lowercased()
@@ -82,14 +98,11 @@ enum VietnamesePredictionEngine {
         let contextWords = words(in: base)
         var best: [String: Int] = [:]
 
-        for entry in entries {
-            let phrase = entry.text.precomposedStringWithCanonicalMapping
-            let phraseWords = phrase.split(separator: " ").map(String.init)
-            guard !phraseWords.isEmpty else { continue }
-            for start in phraseWords.indices {
-                let candidate = phraseWords[start...].joined(separator: " ")
-                guard candidate.lowercased().hasPrefix(normalizedPrefix) else { continue }
-                let preceding = Array(phraseWords[..<start]).map { $0.lowercased() }
+        for entry in prepared {
+            for start in entry.tails.indices {
+                let candidate = entry.tails[start]
+                guard entry.loweredTails[start].hasPrefix(normalizedPrefix) else { continue }
+                let preceding = Array(entry.loweredWords[..<start])
                 let matched = matchingContextWords(contextWords, preceding)
                 if normalizedPrefix.isEmpty && matched == 0 { continue }
                 if start > 0 && matched < min(preceding.count, 1) { continue }

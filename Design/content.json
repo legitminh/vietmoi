@@ -549,10 +549,45 @@
     "en": "suggestions: off",
     "zh": "建议：关"
   },
+  "on": {
+    "vi": "bật",
+    "en": "on",
+    "zh": "开"
+  },
+  "off": {
+    "vi": "tắt",
+    "en": "off",
+    "zh": "关"
+  },
+  "numberPicks": {
+    "vi": "chọn bằng số",
+    "en": "pick by number",
+    "zh": "用数字选择"
+  },
+  "numberPicksHelp": {
+    "vi": "trên máy tính, khi đang hiện gợi ý, gõ 1–9 để chọn gợi ý mang số đó. tab chọn gợi ý đầu tiên.",
+    "en": "on a computer, while suggestions show, type 1–9 to pick the suggestion with that number. tab picks the first one.",
+    "zh": "在电脑上，显示建议时输入 1–9 选择对应编号的建议。tab 选择第一个。"
+  },
+  "numberPicksDigit": {
+    "vi": "để gõ chữ số, bấm - trước: \"a\" rồi \"-2\" ra \"a2\", không phải gợi ý thứ hai.",
+    "en": "to type a digit instead, press - first: \"a\" then \"-2\" types \"a2\", not the second suggestion.",
+    "zh": "要输入数字，先按 -：\"a\" 再 \"-2\" 得到 \"a2\"，而不是第二个建议。"
+  },
+  "numberPicksMinus": {
+    "vi": "để gõ dấu trừ, bấm - hai lần: \"a\" rồi \"--\" ra \"a-\".",
+    "en": "to type a minus sign, press - twice: \"a\" then \"--\" types \"a-\".",
+    "zh": "要输入减号，按两次 -：\"a\" 再 \"--\" 得到 \"a-\"。"
+  },
+  "numberPicksGrid": {
+    "vi": "bàn phím lưới 4×8 dùng hàng số để gõ, nên ở đó hãy chọn bằng tab hoặc chạm.",
+    "en": "the 4×8 grid types with its number row, so there pick with tab or a tap.",
+    "zh": "4×8 网格键盘用数字行输入，因此在那里请用 tab 或轻点选择。"
+  },
   "acceptSuggestionHelp": {
-    "vi": "tab hoặc chạm để chọn gợi ý. dấu cách không chọn gợi ý.",
-    "en": "tab or tap to accept a suggestion. space never accepts one.",
-    "zh": "按 tab 或轻点以接受建议。空格不会接受建议。"
+    "vi": "tab, chạm hoặc số của gợi ý để chọn. dấu cách không chọn gợi ý.",
+    "en": "tab, a tap or its number accepts a suggestion. space never accepts one.",
+    "zh": "按 tab、轻点或其数字以接受建议。空格不会接受建议。"
   },
   "keyboardLanguage.english": {
     "vi": "tiếng anh",

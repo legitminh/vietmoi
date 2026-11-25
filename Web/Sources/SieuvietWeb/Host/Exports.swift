@@ -24,6 +24,14 @@
     var shiftTapSeconds = ShiftTapDetector.defaultTapSeconds
     var touchShift = MobileShiftState()
     var symbols = MobileSymbolState()
+    /// Number picks from the physical keyboard, with "-" escaping the next key.
+    var numberKeys = SuggestionNumberKeys()
+    /// Number keys pick suggestions wherever they are not typing keys themselves:
+    /// English and Vietnamese ASCII+ (the 4×8 grid types with its number row).
+    var numberPicksAvailable: Bool {
+        session.profile.suggestionsEnabled && (session.keyboardLanguage == .english ||
+            (session.keyboardLanguage == .vietnamese && session.input == .asciiPlus))
+    }
     var changed = true
     /// A Chinese dictionary being built a slice at a time in idle callbacks.
     var chineseBuilder: ShuangpinDictionaryBuilder?
@@ -111,6 +119,7 @@ private let languages: [String: KeyboardLanguage] = ["vi": .vietnamese, "en": .e
 func svConfigure(_ length: Int32) {
     onMain {
         let host = WebHost.shared
+        host.numberKeys.reset()
         let lines = input(length).split(separator: "\n").map { $0.split(separator: "\t", omittingEmptySubsequences: false).map { String($0) } }
         guard let header = lines.first, header.count >= 3 else { return }
         var profiles: [KeyboardProfile] = []
@@ -182,6 +191,25 @@ func svKey(_ length: Int32, _ flags: Int32) -> Int32 {
         if let code = ASCIIKeyboardLayout.keyCodesByLabel[position] { host.shiftTap.keyDown(code) } else { host.shiftTap.interrupt() }
         var handled = true
         let chinese = session.keyboardLanguage == .chinese
+        // Number keys pick a shown suggestion; "-" escapes the next key ("-2" types 2, "--" types -).
+        if !command, host.numberKeys.escaping, position == "Backspace" || position == "Escape" {
+            _ = host.numberKeys.cancel()
+            host.changed = true
+            return operations() * 2 + 1
+        }
+        if !command, !chinese, host.numberPicksAvailable || host.numberKeys.escaping {
+            let character = !shift && position.count == 1 ? position : text
+            switch host.numberKeys.key(character, shown: { session.suggestions.count }) {
+            case .pick(let index):
+                session.selectSuggestion(at: index)
+                return operations() * 2 + 1
+            case .escape:
+                host.changed = true
+                return operations() * 2 + 1
+            case .minusThenPass: session.literal("-")
+            case .pass: break
+            }
+        }
         if command {
             session.finish()
             handled = false
@@ -204,9 +232,8 @@ func svKey(_ length: Int32, _ flags: Int32) -> Int32 {
                 let routable = session.rows.contains { row in row.contains { $0.label == position && $0.keyCode != 56 } }
                 let digit = Int(position).flatMap { (1...9).contains($0) ? $0 : nil }
                 // Shift+digit types its symbol ("!"), never a suggestion.
-                if let digit = digit, !shift, chinese ? session.pending : (session.keyboardLanguage == .vietnamese && session.input == .asciiPlus),
-                   session.suggestions.indices.contains(digit - 1), !routable || chinese {
-                    // Number keys choose a candidate (Chinese) or an ASCII+ suggestion, as on the Mac.
+                if let digit = digit, !shift, chinese, session.pending, session.suggestions.indices.contains(digit - 1) {
+                    // Number keys choose a Chinese candidate, as on the Mac.
                     session.selectSuggestion(at: digit - 1)
                 } else if routable && !session.ascii && !(chinese && !position.allSatisfy({ $0.isLetter || $0 == ";" })),
                           let key = key(position) {
@@ -268,6 +295,7 @@ func svTouch(_ action: Int32, _ argument: Int32, _ seconds: Double, _ length: In
     onMain {
         let host = WebHost.shared, session = host.session
         host.adoptDictionaryIfIdle()
+        host.numberKeys.reset()
         let page: MobileSymbolState.Page = argument == 2 ? .symbols : .numbers
         switch action {
         case 0:
@@ -328,6 +356,9 @@ func svState() -> Int32 {
         json.key("phase"); json.int(session.phase.rawValue)
         json.key("suggestionsEnabled"); json.bool(session.suggestionsEnabled)
         json.key("suggestions"); json.strings(session.suggestions)
+        // Whether 1–9 pick the shown suggestions now, and whether "-" is escaping the next key.
+        json.key("numberPicks"); json.bool(host.numberPicksAvailable && !host.numberKeys.escaping)
+        json.key("escaping"); json.bool(host.numberKeys.escaping)
         json.key("uppercase"); json.bool(host.touchShift.uppercase)
         json.key("capsLock"); json.bool(host.touchShift.capsLock)
         json.key("page"); json.int(host.symbols.page.rawValue)
