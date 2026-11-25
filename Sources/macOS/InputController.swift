@@ -49,6 +49,16 @@ final class InputSession {
     private var predictionKey: String?
     private var chinesePredictionKey: String?
     private var cachedSuggestions: [String] = []
+    /// The text before the caret (or before the composition) at one document location,
+    /// read once per location so a refresh rarely needs to ask the host for it again.
+    private var cachedContext: (location: Int, text: String)?
+    /// The English prefix the cached suggestions complete, so the next letter can narrow them at once.
+    private var englishPrefix = ""
+    private var numberKeys = SuggestionNumberKeys()
+    /// The guide is redrawn after the key event returns, at most once per run-loop pass.
+    private var refreshScheduled = false
+    private var refreshGeneration = 0
+    private var pendingRefresh: (sender: Any?, message: String?) = (nil, nil)
     private let submitCompletion: CompletionSubmit
     init(showGuide: Bool = true, profileProvider: @escaping () -> KeyboardProfile = { KeyboardProfiles.shared.active },
          shiftTapThreshold: @escaping () -> TimeInterval = { KeyboardPreferences.shared.shiftTapSeconds },
@@ -117,10 +127,12 @@ final class InputSession {
         resetShiftTracking()
         finishComposition(sender)
         history.removeAll()
+        // A redraw still queued from the last key must not bring the guide back.
+        cancelScheduledRefresh()
         if showGuide { KeyboardPanel.shared.hide() }
     }
 
-    func hidePalettes() { invalidateSuggestions(); if showGuide { KeyboardPanel.shared.hide() } }
+    func hidePalettes() { invalidateSuggestions(); cancelScheduledRefresh(); if showGuide { KeyboardPanel.shared.hide() } }
 
     func commitComposition(_ sender: Any!) {
         traceShift("commit", sender: sender)
@@ -203,15 +215,29 @@ final class InputSession {
             return false
         }
         if currentProfile?.language == .chinese { return handleChinese(event, client: client) }
-        // Tab (or a number key on ASCII+) accepts a suggestion; Space only types a space.
+        // Number keys pick a shown suggestion; "-" escapes the next key ("-2" types 2, "--" types -).
+        if numberKeys.escaping && (event.keyCode == 51 || event.keyCode == 53) {
+            _ = numberKeys.cancel()
+            refresh(sender)
+            return true
+        }
+        if numberPicksAvailable || numberKeys.escaping {
+            let text = Self.numberRow[event.keyCode] ?? event.characters ?? ""
+            switch numberKeys.key(text, shown: { self.suggestions(client).count }) {
+            case .pick(let index): return acceptSuggestion(index, client: client)
+            case .escape:
+                refresh(sender)
+                return true
+            case .minusThenPass:
+                finishComposition(sender)
+                commit("-", client: client)
+            case .pass: break
+            }
+        }
+        // Tab accepts the first suggestion; Space only types a space.
         if event.keyCode == 48, currentProfile?.language != .chinese, event.modifierFlags.intersection([.shift, .command, .control, .option]).isEmpty,
            !suggestions(client).isEmpty {
             return acceptSuggestion(0, client: client)
-        }
-        if currentProfile?.suggestionsEnabled == true, currentProfile?.language == .vietnamese, currentProfile?.inputType == .asciiPlus, !engine.ascii,
-           let index = [18,19,20,21,23,22,26,28,25].firstIndex(of: Int(event.keyCode)),
-           suggestions(client).indices.contains(index) {
-            return acceptSuggestion(index, client: client)
         }
         if event.keyCode == 49 && !engine.ascii && engine.isPending {
             return finishWithSpace(sender)
@@ -394,6 +420,28 @@ final class InputSession {
         predictionRequest?.cancel(); chineseRequest?.cancel()
         predictionKey = nil; chinesePredictionKey = nil
         cachedSuggestions = []
+        cachedContext = nil
+        englishPrefix = ""
+        numberKeys.reset()
+    }
+
+    /// The physical number row by position, so number picks follow the key, not the layout.
+    private static let numberRow: [UInt16: String] = [18:"1", 19:"2", 20:"3", 21:"4", 23:"5", 22:"6", 26:"7", 28:"8", 25:"9", 29:"0", 27:"-"]
+
+    /// Number keys pick suggestions wherever they are not typing keys themselves:
+    /// English and Vietnamese ASCII+ (the 4×8 grid types with its number row).
+    private var numberPicksAvailable: Bool {
+        guard let profile = currentProfile, profile.suggestionsEnabled else { return false }
+        return profile.language == .english || (profile.language == .vietnamese && profile.inputType == .asciiPlus && !engine.ascii)
+    }
+
+    /// Text before `location`, read from the host only when the location changed.
+    private func context(before location: Int, client: IMKTextInput) -> String {
+        if let cached = cachedContext, cached.location == location { return cached.text }
+        let count = min(96, location)
+        let text = documentText(client, range: NSRange(location: location - count, length: count)) ?? ""
+        cachedContext = (location, text)
+        return text
     }
 
     private func suggestions(_ client: IMKTextInput) -> [String] {
@@ -401,21 +449,41 @@ final class InputSession {
             predictionRequest?.cancel(); predictionKey = nil; cachedSuggestions = []
             return []
         }
-        let selection = client.selectedRange()
-        guard selection.location != NSNotFound, selection.length == 0 else { return [] }
-        let count = min(256, selection.location)
-        let context = documentText(client, range: NSRange(location: selection.location - count, length: count)) ?? ""
-        let prefix = engine.preview
         let language = currentProfile!.language
-        let key = "\(currentProfile!.id):\(selection.location):\(prefix):\(context)"
+        let prefix = engine.preview
+        // While composing, the text before the syllable does not change, so it is read once per syllable.
+        let location: Int
+        if marked, let origin = origin, origin.location != NSNotFound {
+            location = origin.location
+        } else {
+            let selection = client.selectedRange()
+            guard selection.location != NSNotFound, selection.length == 0 else { return [] }
+            location = selection.location
+        }
+        let context = context(before: location, client: client)
+        let key = "\(currentProfile!.id):\(location):\(prefix):\(context)"
         guard key != predictionKey else { return cachedSuggestions }
         predictionRequest?.cancel()
         predictionKey = key
-        cachedSuggestions = []
+        if language != .english {
+            // The Vietnamese model is a small in-memory table: rank it now, so the shown
+            // suggestions always match the syllable and never blink empty between keys.
+            cachedSuggestions = VietnamesePredictionEngine.suggestions(context: context, prefix: prefix, limit: 9).map(\.suffix)
+            return cachedSuggestions
+        }
+        // English asks the system spell checker in the background. Until it answers, the
+        // last suggestions that still fit the longer word stay up ("hel" + "p" keeps "ful").
+        let word = EnglishCompletion.prefix(of: context)
+        if word.count > englishPrefix.count, !englishPrefix.isEmpty, word.hasPrefix(englishPrefix) {
+            let typed = String(word.dropFirst(englishPrefix.count))
+            cachedSuggestions = cachedSuggestions.filter { $0.count > typed.count && $0.hasPrefix(typed) }.map { String($0.dropFirst(typed.count)) }
+        } else {
+            cachedSuggestions = []
+        }
+        englishPrefix = word
         let complete = englishWords
         predictionRequest = submitCompletion({
-            language == .english ? EnglishCompletion.suffixes(context: context, complete: complete)
-                : VietnamesePredictionEngine.suggestions(context: context, prefix: prefix, limit: 9).map(\.suffix)
+            EnglishCompletion.suffixes(context: context, complete: complete)
         }, { [weak self] values in
             guard let self = self, self.predictionKey == key else { return }
             self.cachedSuggestions = values
@@ -710,6 +778,7 @@ final class InputSession {
         guard CompositionText.isSafe(text) else { return }
         let start = origin?.location ?? client.selectedRange().location
         client.insertText(text, replacementRange: unspecified)
+        cachedContext = nil
         marked = false
         origin = nil
         expectedSelection = nil
@@ -820,8 +889,31 @@ final class InputSession {
         return text
     }
 
+    /// Redraw the guide after the key event has returned to the app. Reading the caret
+    /// and the text around it are round trips to the app; done inside the key event they
+    /// delayed every keystroke, and several redraws for one key are merged into one.
     private func refresh(_ sender: Any!, message: String? = nil) {
         guard showGuide else { return }
+        pendingRefresh = (sender, message ?? pendingRefresh.message)
+        guard !refreshScheduled else { return }
+        refreshScheduled = true
+        let generation = refreshGeneration
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self, self.refreshScheduled, self.refreshGeneration == generation else { return }
+            self.refreshScheduled = false
+            let pending = self.pendingRefresh
+            self.pendingRefresh = (nil, nil)
+            self.refreshNow(pending.sender, message: pending.message)
+        }
+    }
+
+    private func cancelScheduledRefresh() {
+        refreshScheduled = false
+        refreshGeneration &+= 1
+        pendingRefresh = (nil, nil)
+    }
+
+    private func refreshNow(_ sender: Any!, message: String?) {
         var rect = NSRect.zero
         if let client = sender as? IMKTextInput {
             _ = client.attributes(forCharacterIndex: 0, lineHeightRectangle: &rect)
@@ -837,11 +929,13 @@ final class InputSession {
             return
         }
         let candidates = (sender as? IMKTextInput).map(suggestions) ?? []
+        let profile = currentProfile ?? profileProvider()
         KeyboardPanel.shared.show(engine: engine, caret: rect.height > 0 ? rect : nil, message: message ?? notice,
-                                  inputType: (currentProfile ?? profileProvider()).inputType,
+                                  inputType: profile.inputType,
                                   asciiActions: ASCIIPlusMapping.actions(for: engine, keymap: keymap),
-                                  showKeyboard: (currentProfile ?? profileProvider()).showVirtualKeyboard,
-                                  suggestions: candidates, onChoose: { [weak self] index in
+                                  showKeyboard: profile.showVirtualKeyboard,
+                                  suggestions: candidates, reserveSuggestions: profile.suggestionsEnabled,
+                                  numbered: numberPicksAvailable && !numberKeys.escaping, onChoose: { [weak self] index in
                                       guard let client = sender as? IMKTextInput else { return }
                                       _ = self?.acceptSuggestion(index, client: client)
                                   })

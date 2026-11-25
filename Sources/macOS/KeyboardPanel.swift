@@ -83,13 +83,16 @@ final class KeyboardPanel: NSObject {
 
     func show(engine: KeyboardEngine, caret: NSRect?, message: String? = nil,
               inputType: InputType = .grid4x8, asciiActions: [UInt16: String] = [:],
-              showKeyboard: Bool = true, suggestions: [String] = [], onChoose: ((Int) -> Void)? = nil) {
+              showKeyboard: Bool = true, suggestions: [String] = [], reserveSuggestions: Bool = false,
+              numbered: Bool = true, onChoose: ((Int) -> Void)? = nil) {
         guard (showKeyboard || !suggestions.isEmpty), !SettingsWindow.shared.isFrontmost else { hide(); return }
         self.onChoose = onChoose
         chineseKeyboard.isHidden = true
         let useASCII = inputType == .asciiPlus || engine.ascii
         let baseHeight: CGFloat = showKeyboard ? (useASCII ? 168 : 250) : 0
-        let suggestionHeight: CGFloat = suggestions.isEmpty ? 0 : 42
+        // With suggestions on, their row keeps its place even while empty, so the keyboard
+        // never jumps up and down between keystrokes.
+        let suggestionHeight: CGFloat = suggestions.isEmpty && !(reserveSuggestions && showKeyboard) ? 0 : 42
         let size = NSSize(width: useASCII ? 512 : 584, height: baseHeight + suggestionHeight)
         panel.setContentSize(size)
         asciiKeyboard.isHidden = !showKeyboard || !useASCII
@@ -110,10 +113,11 @@ final class KeyboardPanel: NSObject {
         for (index, label) in suggestionLabels.enumerated() {
             guard suggestions.indices.contains(index) else { label.isHidden = true; continue }
             let value = suggestions[index]
-            let width = min(size.width * 0.5, max(58, (value as NSString).size(withAttributes: [.font: label.font!]).width + 34))
+            let title = numbered && index < 9 ? "\(index + 1)  \(value)" : value
+            let width = min(size.width * 0.5, max(58, (title as NSString).size(withAttributes: [.font: label.font!]).width + 18))
             guard x + width <= size.width - 12 else { label.isHidden = true; continue }
             label.isHidden = false
-            label.title = "\(index + 1)  \(value)"
+            label.title = title
             label.setAccessibilityLabel(value)
             label.frame = NSRect(x: x, y: baseHeight + 5, width: width, height: 32)
             x += width + 6
