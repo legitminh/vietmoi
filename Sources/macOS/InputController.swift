@@ -769,6 +769,11 @@ final class InputSession {
         case .commit(let text): commit(text, client: client); adaptiveTail = adaptive ? text : nil
         case .cancel:
             if marked && !compositionMoved(client) {
+                // Many apps ignore an empty insertText, which left a cancelled initial ("x")
+                // on screen after Backspace. Empty the marked text first, then end it.
+                if originalSelection.isEmpty {
+                    client.setMarkedText("", selectionRange: NSRange(location: 0, length: 0), replacementRange: unspecified)
+                }
                 client.insertText(originalSelection, replacementRange: unspecified)
             }
             marked = false
