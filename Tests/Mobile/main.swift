@@ -366,8 +366,16 @@ import Foundation
                && upgraded.profiles[0].inputMode == .quocNgu, "All three completion toggles and the input mode migrate")
         let pendingDoc = TestMobileDocument()
         var responses: [([String]) -> Void] = []
-        let fast = MobileInputSession(document: pendingDoc, defaults: UserDefaults(suiteName: suite + ".async")!,
+        // Vietnamese ranks its small table inline; English waits on the word list in the background.
+        let vietnameseDoc = TestMobileDocument()
+        let inline = MobileInputSession(document: vietnameseDoc, defaults: UserDefaults(suiteName: suite + ".inline")!,
             submitCompletion: { _, receive in responses.append(receive); return nil })
+        type("x", inline)
+        expect(!inline.suggestions.isEmpty && responses.isEmpty, "Vietnamese suggestions show with the key, without a background request")
+        let englishProfile = KeyboardProfile.makeEnglish()
+        let englishOnly = MobileKeyboardSettings(profiles: [englishProfile], activeID: englishProfile.id, language: "vi")
+        let fast = MobileInputSession(document: pendingDoc, defaults: UserDefaults(suiteName: suite + ".async")!,
+            settingsProvider: { englishOnly }, submitCompletion: { _, receive in responses.append(receive); return nil })
         type("x", fast)
         expect(pendingDoc.text == "x" && fast.suggestions.isEmpty && responses.count == 1, "Typing completes before the prediction worker responds")
         type("s", fast)
