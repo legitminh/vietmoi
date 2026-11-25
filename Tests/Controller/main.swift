@@ -13,6 +13,7 @@ final class TestDocument: NSObject, IMKTextInput {
     var attributedAccessEnabled = true
     var plainAccessEnabled = true
     var lastMarkedWasUnderlined = false
+    var ignoresEmptyInsert = false
     func replace(_ value: String, range: NSRange) {
         text = (text as NSString).replacingCharacters(in: range, with: value)
         selection = NSRange(location: range.location + value.utf16.count, length: 0)
@@ -20,6 +21,8 @@ final class TestDocument: NSObject, IMKTextInput {
     func insertText(_ string: Any!, replacementRange range: NSRange) {
         let before = selection
         let value = (string as? String) ?? (string as? NSAttributedString)?.string ?? ""
+        // Like many real apps: an empty insert is a no-op that leaves marked text in place.
+        if ignoresEmptyInsert && value.isEmpty { return }
         replace(value, range: range.location != NSNotFound ? range : (mark.location != NSNotFound ? mark : selection))
         mark = NSRange(location: NSNotFound, length: 0)
         if deferNextCommitSelection {
@@ -882,6 +885,14 @@ expect(!multilingualKey(19, "2") && document.mark.location == NSNotFound && docu
 resetDocument("")
 multilingualLetters("x")
 expect(multilingualKey(18, "1") && document.text.hasPrefix(syllable) && document.text.hasSuffix(" "), "1 picks the first ASCII+ suggestion")
+resetDocument("ab ")
+document.ignoresEmptyInsert = true
+multilingualLetters("x")
+expect(multilingualKey(51) && document.text == "ab ",
+       "Backspace after a lone initial clears it from the screen, even where an empty insert does nothing")
+document.ignoresEmptyInsert = false
+multilingualLetters("x")
+expect(document.text.hasPrefix("ab ") && document.text.count == 4, "The next key starts a new block")
 resetDocument("ab")
 multilingualLetters("o")
 expect(document.text == "ab", "An empty onset shows nothing")
