@@ -169,7 +169,11 @@ public:
         const auto tail = std::move(tail_); tail_.clear();
         if (punctuate(tail, event)) return true;
         if (event.shortcut) { finish(); recent_.clear(); return false; }
-        if (event.usage == 0x2a && pending()) { command(SV_BACKSPACE); return true; }
+        if (event.usage == 0x2a && pending()) {
+            // An empty onset ("o") shows nothing: Backspace drops it and deletes as usual.
+            if (preview().empty()) { command(SV_CANCEL); return false; }
+            command(SV_BACKSPACE); return true;
+        }
         if (event.usage == 0x29 && pending()) { command(SV_CANCEL); return true; }
         if (event.usage == 0x4c && !ascii() && !event.selection && (pending() || !recent_.empty())) { command(SV_CLEAR); return true; }
         if (event.shift) { finish(); recent_.clear(); return false; }

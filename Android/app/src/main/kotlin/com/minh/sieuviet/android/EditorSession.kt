@@ -92,7 +92,11 @@ class EditorSession(private val connection: InputConnection, val profile: Keyboa
     }
 
     fun backspace() {
-        if (state.getBoolean("pending")) { command(NativeEngine.BACKSPACE); return }
+        if (state.getBoolean("pending")) {
+            // An empty onset ("o") shows nothing: Backspace drops it and deletes as usual.
+            if (state.optString("preview").isNotEmpty()) { command(NativeEngine.BACKSPACE); return }
+            command(NativeEngine.CANCEL)
+        }
         recentCommit = null; tail = null
         if (!connection.getSelectedText(0).isNullOrEmpty()) connection.commitText("", 1)
         else {

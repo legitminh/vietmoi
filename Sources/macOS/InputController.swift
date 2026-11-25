@@ -249,6 +249,12 @@ final class InputSession {
             return pending
         }
         if event.keyCode == 51 {
+            if showsNothing {
+                // An empty onset shows nothing: Backspace drops it and deletes as usual.
+                cancelComposition(sender)
+                refresh(sender)
+                return false
+            }
             if engine.isPending {
                 apply(engine.backspace(), sender: sender)
                 refresh(sender)
@@ -320,6 +326,9 @@ final class InputSession {
     }
 
     private var isPending: Bool { engine.isPending || chinese.isPending }
+    /// A composition with nothing on screen (an empty onset such as "o"), and no selection it replaced.
+    /// Backspace must not spend a keystroke on it with no visible change.
+    private var showsNothing: Bool { engine.isPending && engine.preview.isEmpty && originalSelection.isEmpty }
 
     private func cancelComposition(_ sender: Any!) {
         let pending = isPending
@@ -588,6 +597,11 @@ final class InputSession {
                 return handled
             }
             guard engine.isPending else { return false }
+            if showsNothing {
+                cancelComposition(sender)
+                refresh(sender)
+                return false
+            }
             apply(engine.backspace(), sender: sender)
             refresh(sender)
             return true
